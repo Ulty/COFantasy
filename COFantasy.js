@@ -1,4 +1,4 @@
-//Dernière modification : ven. 20 sept. 2024,  03:34
+//Dernière modification : jeu. 26 sept. 2024,  02:11
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -73,6 +73,7 @@ let COF_loaded = false;
 //   - nomFin: nom à afficher pour le statut et mettre fin aux événements
 //   par exemple, foudreDuTemps pour les foudres du temps
 // - tenebresMagiques : état général de ténèbres magiques
+// - aileForgeRunique: aile de la forge runique pour gérer les péchés.
 // - jetsEnCours : pour laisser le MJ montrer ou non un jet qui lui a été montré à lui seul
 // - currentAttackDisplay : pour pouvoir remontrer des display aux joueurs
 // - pause : le jeu est en pause
@@ -1008,6 +1009,22 @@ var COFantasy = COFantasy || function() {
       adv_fow_view_distance: token.get('adv_fow_view_distance'),
       gmnotes: token.get('gmnotes'),
     };
+  }
+
+  //Retourne un encodage des tailes :
+  // 1 : minuscule
+  // 2 : très petit
+  // 3 : petit
+  // 4 : moyen
+  // 5 : grand
+  // 6 : énorme
+  // 7 : colossal
+  function taillePersonnage(perso, def) {
+    if (perso.taille) return perso.taille;
+    let taille = tailleNormale(perso, def);
+    if (attributeAsBool(perso, 'agrandissement')) taille++;
+    perso.taille = taille;
+    return taille;
   }
 
   //options peut contenir
@@ -6953,6 +6970,11 @@ var COFantasy = COFantasy || function() {
         options.cacheBonusToutesCaracs.val = bonus;
       }
     }
+    let explications = [];
+    bonus += effetSalleForgeRunique(personnage, explications);
+    explications.forEach(function(msg) {
+      expliquer(msg);
+    });
     return bonus;
   }
 
@@ -12414,20 +12436,109 @@ var COFantasy = COFantasy || function() {
     return def;
   }
 
-  //Retourne un encodage des tailes :
-  // 1 : minuscule
-  // 2 : très petit
-  // 3 : petit
-  // 4 : moyen
-  // 5 : grand
-  // 6 : énorme
-  // 7 : colossal
-  function taillePersonnage(perso, def) {
-    if (perso.taille) return perso.taille;
-    let taille = tailleNormale(perso, def);
-    if (attributeAsBool(perso, 'agrandissement')) taille++;
-    perso.taille = taille;
-    return taille;
+  function pechePositif(salle, explications) {
+    explications.push("se sent bien dans " + salle + " => +1");
+    return 1;
+  }
+
+  function pecheNegatif(salle, explications) {
+    explications.push("se sent mal dans " + salle + " => -2");
+    return -2;
+  }
+
+  //returns 0 if no effect, a positive number if positive and a negative number is negative
+  function effetSalleForgeRunique(perso, explications) {
+    if (!stateCOF.aileForgeRunique) return 0;
+    let peche = predicateAsBool(perso, 'pecheThassilion');
+    if (!peche) return 0;
+    switch (stateCOF.aileForgeRunique) {
+      case 'paresse':
+        {
+          let salle = "le labyrinthe purulent";
+          switch (peche) {
+            case 'paresse':
+              return pechePositif(salle, explications);
+            case 'colere':
+            case 'orgueil':
+              return pecheNegatif(salle, explications);
+          }
+          return 0;
+        }
+      case 'avarice':
+        {
+          let salle = "le caveau de l'avarice";
+          switch (peche) {
+            case 'avarice':
+              return pechePositif(salle, explications);
+            case 'luxure':
+            case 'orgueil':
+              return pecheNegatif(salle, explications);
+          }
+          return 0;
+        }
+      case 'orgueil':
+        {
+          let salle = "les voiles scintillants";
+          switch (peche) {
+            case 'orgueil':
+              return pechePositif(salle, explications);
+            case 'avarice':
+            case 'paresse':
+              return pecheNegatif(salle, explications);
+          }
+          return 0;
+        }
+      case 'envie':
+        {
+          let salle = "les salles de l'envie";
+          switch (peche) {
+            case 'envie':
+              return pechePositif(salle, explications);
+            case 'colere':
+            case 'gourmandise':
+              return pecheNegatif(salle, explications);
+          }
+          return 0;
+        }
+      case 'colere':
+        {
+          let salle = "les salles de la colère";
+          switch (peche) {
+            case 'colere':
+              return pechePositif(salle, explications);
+            case 'paresse':
+            case 'envie':
+              return pecheNegatif(salle, explications);
+          }
+          return 0;
+        }
+      case 'gourmandise':
+        {
+          let salle = "les cryptes affamées";
+          switch (peche) {
+            case 'gourmandise':
+              return pechePositif(salle, explications);
+            case 'envie':
+            case 'luxure':
+              return pecheNegatif(salle, explications);
+          }
+          return 0;
+        }
+      case 'luxure':
+        {
+          let salle = "les cages de fer";
+          switch (peche) {
+            case 'luxure':
+              return pechePositif(salle, explications);
+            case 'avarice':
+            case 'gourmandise':
+              return pecheNegatif(salle, explications);
+          }
+          return 0;
+        }
+    }
+    error("L'aile de forge runique est mal définie " + stateCOF.aileForgeRunique, stateCOF);
+    return 0;
   }
 
   //tm doit être stateCOF.tenebresMagiques, et bien défini.
@@ -13609,6 +13720,7 @@ var COFantasy = COFantasy || function() {
       explications.push(msgConditions);
       attBonus -= conditions;
     }
+    attBonus += effetSalleForgeRunique(attaquant, explications);
     return attBonus;
   }
 
@@ -21677,6 +21789,11 @@ var COFantasy = COFantasy || function() {
         expliquer("Peau d'écorce améliorée => +" + bonusPeau + " pour résister au poison");
       }
     }
+    let explications = [];
+    bonus += effetSalleForgeRunique(target, explications);
+    explications.forEach(function(msg) {
+      expliquer(nomPerso(target) + ' ' + msg);
+    });
     let bonusAttrs = [];
     let bonusPreds = [];
     let seuil = s.seuil;
@@ -25165,6 +25282,9 @@ var COFantasy = COFantasy || function() {
       for (let ev in stateCOF.effetAuD20) {
         sendPlayer('GM', boutonSimple("!cof-effet-chaque-d20 " + ev + " fin", "Mettre fin") + stateCOF.effetAuD20[ev].nomFin + " ?");
       }
+    }
+    if (stateCOF.aileForgeRunique) {
+      sendPlayer('GM', boutonSimple("!cof-aile-forge-runique sortir", "Sortir") + "de la salle de " + stateCOF.aileForgeRunique + " ?");
     }
     let attrs = findObjs({
       _type: 'attribute'
@@ -42531,6 +42651,57 @@ var COFantasy = COFantasy || function() {
     }
   }
 
+  /* !cof-aile-forge-runique */
+  function entrerAileForgeRunique(msg) {
+    let cmd = msg.content.split(' ');
+    cmd = cmd.filter(function(c) {
+      return c.trim() !== '';
+    });
+    if (cmd.length < 2) {
+      if (stateCOF.aileForgeRunique) {
+        sendPlayer('GM', "Les personnage sont dans la salle de " + stateCOF.aileForgeRunique);
+      } else {
+        sendPlayer('GM', "Les personnages ne sont pas dans les forges runiques.");
+      }
+      return;
+    }
+    let b;
+    switch (cmd[1]) {
+      case 'paresse':
+      case 'orgueil':
+      case 'gourmandise':
+      case 'colere':
+      case 'luxure':
+      case 'avarice':
+      case 'envie':
+        b = cmd[1];
+        break;
+      case 'colère':
+        b = 'colere';
+        break;
+      case 'non':
+      case 'sortir':
+      case 'false':
+      case 'fin':
+        b = false;
+        break;
+      default:
+        error("Option de !cof-aile-forge-runique non reconnue", cmd);
+        return;
+    }
+    if (b) {
+      if (stateCOF.aileForgeRunique == b) {
+        sendPlayer('GM', "Les personnages sont déjà dans la salle de " + b);
+        return;
+      }
+      sendPlayer('GM', "Les personnages entrent dans la salle de " + b);
+      stateCOF.aileForgeRunique = b;
+    } else {
+      sendPlayer('GM', "Les personnages sortent de la salle de " + stateCOF.aileForgeRunique);
+      delete stateCOF.aileForgeRunique;
+    }
+  }
+
   function fioleDeLumiere(msg) {
     let cmd = msg.content.split(' ');
     let tm = stateCOF.tenebresMagiques;
@@ -42939,6 +43110,9 @@ var COFantasy = COFantasy || function() {
                     return;
                   case 'blindness':
                     predicats += 'immunite_aveugle ';
+                    return;
+                  case 'elemental':
+                    predicats += 'nonVivant ';
                     return;
                   case 'undead':
                   case 'traits':
@@ -46653,6 +46827,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-tenebres-magiques':
         tenebresMagiques(msg);
+        return;
+      case '!cof-aile-forge-runique':
+        entrerAileForgeRunique(msg);
         return;
       case '!cof-undo':
         undoEvent();
