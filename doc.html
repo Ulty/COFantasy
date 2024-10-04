@@ -397,7 +397,9 @@ tr {line-height: 25px;}
                   <li><code>--decrLimitePredicatParTour <i>nom</i></code> : l'attaque n'est possible que si un prédicat <i>nom</i> existe et si elle n'a pas été utilisée plus de fois dans le tour que la valeur de ce prédicat. L'attaque augmente ce nombre de 1.</li>
                   <li><code>--tempsRecharge <i>effet</i> <i>duree</i></code> : l'attaque n'est possible que si l'effet est inactif sur l'attaquant, et de plus active l'effet sur l'attaquant pour la durée indiquée si l'attaque est possible. Il existe un effet temporaire générique, <code>rechargeGen(<i>desc</i>)</code> que vous pouvez utiliser si aucun effet existant ne correspond pour votre attaque.</li>
                   <li><code>--etat <i>e</i></code>: si l'attaque touche, la cible passe dans l'état <i>e</i>. Il est aussi possible de spécifier une caractéristique et un seuil (comme pour <code>!cof-set-state</code>) pour faire afficher à chaque tour une action permettant de se libérer de l'état.</li>
+                  <li><code>--finEtat <i>e</i></code>: si l'attaque touche, la cible sort de l'état <i>e</i>.</li>
                   <li><code>--effet <i>e duree</i></code> : ajoute à la cible l'effet temporaire <i>e</i> pour la duree spécifiée. Pour que cela soit automatiquement mis à jour, il faut utiliser le turn tracker. Noter que l'argument de durée peut être omis pour certains effets, comme ceux qui par définition durent tout le combat.</li>
+                  <li><code>--finEffet <i>e </i></code> : enlève à la cible l'effet temporaire <i>e</i>.</li>
                   <li><code>--valeur <i>v</i></code> : spécifie une valeur au dernier effet mentionné.</li>
                   <li><code>--optionEffet <i>opt arg1 arg2 ...</i></code> : spécifie une option au dernier effet mentionné. L'option <i>opt</i> doit être donnée sans le <code>--</code> et sera passée telle quelle à l'effet, par exemple pour les dégâts périodiques, si on ne veut pas que la RD s'applique, on pourra ajouter <code>--optionEffet ignoreRD</code>.</li>
                   <li><code>--peur <i>seuil duree</i></code> : fait un effet de peur si l'attaque touche. Le <i>seuil</i> sert pour le test de sagesse de résistance à la peur (tient compte de la capacité <b>sans peur</b> du chevalier).</li>
@@ -2503,6 +2505,12 @@ tr {line-height: 25px;}
                   <li><strong>Huile de fort assaut</strong> : <code>!cof-effet-temp dmgArme(<i>L</i>) 10 --valeur 1d6</code> où <i>L</i> est le label de l'arme qu'on veut enduire d'huile de fort assaut.</li>
                   <li><strong>Hurlement</strong> : Pour les chiens infernaux, <code>!cof-peur [[10+?{Nombre de chiens?}]] 2d4 --titre Hurlement --immuniseSiResiste hurlement --disque 50 --saufAllies</code>, et pour les fantômes, <code>!cof-peur 12 1d6 --titre Hurlement terrible --immuniseSiResiste hurlement --disque 10 --saufAllies</code>.</li>
                   <li><strong>Illusion</strong> : Pour les illusions qui disparaissent et réapparaissent un peu plus loin quand on essaie de les toucher, ajouter un <a href=#predicats>prédicat</a> <code>estUneIllusion</code>.</li>
+                  <li><strong>Immunité à la magie</strong> :
+                    <ul>
+                      <li> Immunité totale : prédicat <code>immunite_magique</code>.</li>
+                      <li>Immunité à la magie des golems : prédicat <code>immuniteMagieGolem</code>.
+                    </ul>
+                  </li>
                   <li><strong>Immunité aux armes</strong> : ajouter un <a href=#predicats>prédicat</a> <code>immuniteAuxArmes</code>. À noter qu'il est possible de spécifier le niveau de magie d'une attaque en donnant un argument à l'option <code>--magique</code>. Ainsi une arme de niveau magique 3 aura en argument <code>--magique 3</code>.</li>
                   <li><strong>Immunité aux attaques non magiques</strong> : ajouter un <a href=#predicats>prédicat</a> <code>immunite_nonMagique</code></li>
                   <li><strong>Immunité aux critiques</strong> : ajouter un <a href=#predicats>prédicat</a> <code>immuniteAuxCritiques</code>.</li>

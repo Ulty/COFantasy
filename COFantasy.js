@@ -1,4 +1,4 @@
-//Dernière modification : jeu. 26 sept. 2024,  02:11
+//Dernière modification : ven. 04 oct. 2024,  11:09
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -3229,13 +3229,12 @@ var COFantasy = COFantasy || function() {
   //options:
   //fromTemp si on est en train de supprimer un effet temporaire
   //affectToken si on a déjà changé le statusmarkers (on vient donc d'un changement à la main d'un marker
-  function setState(personnage, etat, value, evt, options) {
+  function setState(personnage, etat, value, evt, options = {}) {
     let token = personnage.token;
     if (value && predicateAsBool(personnage, 'immunite_' + etat)) {
       sendPerso(personnage, 'ne peut pas être ' + stringOfEtat(etat, personnage));
       return false;
     }
-    options = options || {};
     let aff = options.affectToken ||
       affectToken(token, 'statusmarkers', token.get('statusmarkers'), evt);
     if (stateCOF.combat && value && etatRendInactif(etat) &&
@@ -4232,8 +4231,7 @@ var COFantasy = COFantasy || function() {
   // - oldTokenId
   // - newTokenId
   // - newToken
-  function finDEffet(attr, effet, attrName, charId, evt, options) { //L'effet arrive en fin de vie, doit être supprimé
-    options = options || {};
+  function finDEffet(attr, effet, attrName, charId, evt, options = {}) { //L'effet arrive en fin de vie, doit être supprimé
     evt.deletedAttributes = evt.deletedAttributes || [];
     let res;
     let newInit = [];
@@ -9646,52 +9644,101 @@ var COFantasy = COFantasy || function() {
           };
           break;
         case 'effet':
-          if (cmd.length < 2) {
-            error("Il manque un argument à l'option --effet de !cof-attack", cmd);
-            return;
-          }
-          let effet = cmd[1];
-          if (cof_states[effet] && cmd.length > 2) { //remplacer par sa version effet temporaire
-            effet += 'Temp';
-          }
-          if (estEffetTemp(effet)) {
-            let duree = 1;
-            if (cmd.length > 2) {
-              duree = parseInt(cmd[2]);
-              if (isNaN(duree) || duree < 1) {
-                error(
-                  "Le deuxième argument de --effet doit être un nombre positif",
-                  cmd);
-                return;
-              }
+          {
+            if (cmd.length < 2) {
+              error("Il manque un argument à l'option --effet de !cof-attack", cmd);
+              return;
             }
-            let m = messageOfEffetTemp(effet);
-            lastEtat = {
-              effet: effet,
-              duree: duree,
-              message: m,
-              typeDmg: lastType
-            };
-            scope.seulementVivant = scope.seulementVivant || (m && m.seulementVivant);
-          } else if (estEffetCombat(effet)) {
-            lastEtat = {
-              effet: effet,
-              typeDmg: lastType,
-              message: messageEffetCombat[effet]
-            };
-          } else if (estEffetIndetermine(effet)) {
-            lastEtat = {
-              effet: effet,
-              effetIndetermine: true,
-              typeDmg: lastType
-            };
-          } else {
-            error(cmd[1] + " n'est pas un effet temporaire répertorié", cmd);
+            let effet = cmd[1];
+            if (cof_states[effet] && cmd.length > 2) { //remplacer par sa version effet temporaire
+              effet += 'Temp';
+            }
+            if (estEffetTemp(effet)) {
+              let duree = 1;
+              if (cmd.length > 2) {
+                if (cmd[2] == 'fin') duree = 0;
+                else {
+                  duree = parseInt(cmd[2]);
+                  if (isNaN(duree) || duree < 1) {
+                    error(
+                      "Le deuxième argument de --effet doit être un nombre positif",
+                      cmd);
+                    return;
+                  }
+                }
+              }
+              let m = messageOfEffetTemp(effet);
+              lastEtat = {
+                effet,
+                duree,
+                message: m,
+                typeDmg: lastType
+              };
+              scope.seulementVivant = scope.seulementVivant || (m && m.seulementVivant);
+            } else if (estEffetCombat(effet)) {
+              lastEtat = {
+                effet,
+                typeDmg: lastType,
+                message: messageEffetCombat[effet]
+              };
+            } else if (estEffetIndetermine(effet)) {
+              lastEtat = {
+                effet,
+                effetIndetermine: true,
+                typeDmg: lastType,
+                message: messageEffetIndetermine[effet]
+              };
+            } else {
+              error(cmd[1] + " n'est pas un effet temporaire répertorié", cmd);
+              return;
+            }
+            scope.effets = scope.effets || [];
+            scope.effets.push(lastEtat);
             return;
           }
-          scope.effets = scope.effets || [];
-          scope.effets.push(lastEtat);
-          return;
+        case 'finEffet':
+          {
+            if (cmd.length < 2) {
+              error("Il manque un argument à l'option --finEffet de !cof-attack", cmd);
+              return;
+            }
+            let effet = cmd[1];
+            if (cof_states[effet]) { //remplacer par sa version effet temporaire
+              effet += 'Temp';
+            }
+            if (estEffetTemp(effet)) {
+              let m = messageOfEffetTemp(effet);
+              lastEtat = {
+                effet,
+                duree: 0,
+                finEffet: true,
+                message: m,
+                typeDmg: lastType
+              };
+              scope.seulementVivant = scope.seulementVivant || (m && m.seulementVivant);
+            } else if (estEffetCombat(effet)) {
+              lastEtat = {
+                effet,
+                finEffet: true,
+                typeDmg: lastType,
+                message: messageEffetCombat[effet]
+              };
+            } else if (estEffetIndetermine(effet)) {
+              lastEtat = {
+                effet,
+                finEffet: true,
+                effetIndetermine: true,
+                typeDmg: lastType,
+                message: messageEffetIndetermine[effet]
+              };
+            } else {
+              error(cmd[1] + " n'est pas un effet temporaire répertorié", cmd);
+              return;
+            }
+            scope.effets = scope.effets || [];
+            scope.effets.push(lastEtat);
+            return;
+          }
         case 'valeur':
           if (cmd.length < 2) {
             error("Il manque un argument à l'option --valeur de !cof-attack", cmd);
@@ -9739,50 +9786,73 @@ var COFantasy = COFantasy || function() {
           return;
         case 'etatSi':
         case 'etat':
-          if (cmd.length < 3 && cmd[0] == 'etatSi') {
-            error("Il manque un argument à l'option --etatSi de !cof-attack", cmd);
-            return;
-          } else if (cmd.length < 2) {
-            error("Il manque un argument à l'option --etat de !cof-attack", cmd);
-            return;
-          }
-          let etat = cmd[1];
-          if (!_.has(cof_states, etat)) {
-            error("Etat non reconnu", cmd);
-            return;
-          }
-          let condition = 'toujoursVrai';
-          if (cmd[0] == 'etatSi') {
-            condition = parseCondition(cmd.slice(2));
-            if (condition === undefined) return;
-          }
-          scope.etats = scope.etats || [];
-          lastEtat = {
-            etat: etat,
-            condition: condition,
-            typeDmg: lastType
-          };
-          if (cmd[0] == 'etat' && cmd.length > 3) {
-            if (!isCarac(cmd[2]) && (cmd[2].length != 6 ||
-                !isCarac(cmd[2].substring(0, 3)) || !isCarac(cmd[2].substring(3, 6)))) {
-              error("Caractéristique du jet de sauvegarde incorrecte", cmd);
+          {
+            if (cmd.length < 3 && cmd[0] == 'etatSi') {
+              error("Il manque un argument à l'option --etatSi de !cof-attack", cmd);
+              return;
+            } else if (cmd.length < 2) {
+              error("Il manque un argument à l'option --etat de !cof-attack", cmd);
               return;
             }
-            lastEtat.saveCarac = cmd[2];
-            let opposition = persoOfId(cmd[3]);
-            if (opposition) {
-              lastEtat.saveDifficulte = cmd[3] + ' ' + nomPerso(opposition);
-            } else {
-              lastEtat.saveDifficulte = parseInt(cmd[3]);
-              if (isNaN(lastEtat.saveDifficulte)) {
-                error("Difficulté du jet de sauvegarde incorrecte", cmd);
-                delete lastEtat.saveCarac;
-                delete lastEtat.saveDifficulte;
+            let etat = cmd[1];
+            if (!_.has(cof_states, etat)) {
+              error("État " + etat + " non reconnu", cmd);
+              return;
+            }
+            let condition = 'toujoursVrai';
+            if (cmd[0] == 'etatSi') {
+              condition = parseCondition(cmd.slice(2));
+              if (condition === undefined) return;
+            }
+            scope.etats = scope.etats || [];
+            lastEtat = {
+              etat,
+              condition,
+              typeDmg: lastType
+            };
+            if (cmd[0] == 'etat' && cmd.length > 3) {
+              if (!isCarac(cmd[2]) && (cmd[2].length != 6 ||
+                  !isCarac(cmd[2].substring(0, 3)) || !isCarac(cmd[2].substring(3, 6)))) {
+                error("Caractéristique du jet de sauvegarde incorrecte", cmd);
+                return;
+              }
+              lastEtat.saveCarac = cmd[2];
+              let opposition = persoOfId(cmd[3]);
+              if (opposition) {
+                lastEtat.saveDifficulte = cmd[3] + ' ' + nomPerso(opposition);
+              } else {
+                lastEtat.saveDifficulte = parseInt(cmd[3]);
+                if (isNaN(lastEtat.saveDifficulte)) {
+                  error("Difficulté du jet de sauvegarde incorrecte", cmd);
+                  delete lastEtat.saveCarac;
+                  delete lastEtat.saveDifficulte;
+                }
               }
             }
+            scope.etats.push(lastEtat);
+            return;
           }
-          scope.etats.push(lastEtat);
-          return;
+        case 'finEtat':
+          {
+            if (cmd.length < 2) {
+              error("Il manque un argument à l'option --finEtat de !cof-attack", cmd);
+              return;
+            }
+            let etat = cmd[1];
+            if (!_.has(cof_states, etat)) {
+              error("État " + etat + " non reconnu", cmd);
+              return;
+            }
+            let effet = etat + 'Temp';
+            scope.effets = scope.effets || [];
+            lastEtat = {
+              effet,
+              duree: 0,
+              typeDmg: lastType
+            };
+            scope.effets.push(lastEtat);
+            return;
+          }
         case 'peur':
           if (cmd.length < 3) {
             error("Il manque un argument à l'option --peur de !cof-attack", cmd);
@@ -10957,12 +11027,12 @@ var COFantasy = COFantasy || function() {
         if (options.effets) {
           options.effets.forEach(function(ef) {
             if (ef.effet) {
-              if (estEffetTemp(ef.effet)) {
+              if (estEffetTemp(ef.effet) && ef.effet.duree) {
                 optMana.dm = optMana.dm || (ef.message && ef.message.dm);
                 optMana.soins = optMana.soins || (ef.message && ef.message.soins);
                 optMana.duree = true;
               }
-            } else if (estEffetCombat(ef.effet)) {
+            } else if (estEffetCombat(ef.effet) && !ef.effet.finEffet) {
               optMana.dm = optMana.dm || messageEffetCombat[ef.effet].dm;
               optMana.soins = optMana.soins || messageEffetCombat[ef.effet].soins;
             }
@@ -16339,6 +16409,9 @@ var COFantasy = COFantasy || function() {
       return true;
     }
     if (attributeAsBool(target, 'immuniteA' + dmgType)) return true;
+    if (options.tranchant && predicateAsBool(target, 'immunite_tranchant')) return true;
+    if (options.contondant && predicateAsBool(target, 'immunite_contondant')) return true;
+    if (options.percant && predicateAsBool(target, 'immunite_percant')) return true;
     switch (dmgType) {
       case 'acide':
         if (predicateAsBool(target, 'batonDesRunesMortes') && attributeAsBool(target, 'runeLizura')) return true;
@@ -16408,8 +16481,7 @@ var COFantasy = COFantasy || function() {
   // - un texte affichant le jet de dégâts
   // - la valeur finale des dégâts infligés
   // crit est un booléen, il augmente de 1 (ou options.critCoef) le coefficient (option.dmgCoef) et active certains effets
-  function dealDamage(target, dmg, otherDmg, evt, crit, options, explications, displayRes) {
-    if (options === undefined) options = {};
+  function dealDamage(target, dmg, otherDmg, evt, crit, options = {}, explications = false, displayRes = false) {
     let expliquer = function(msg) {
       if (explications) explications.push(msg);
       else sendPerso(target, msg);
@@ -19699,6 +19771,17 @@ var COFantasy = COFantasy || function() {
             save: true
           });
         }
+        if (!options.redo && options.sortilege && options.dm &&
+          predicateAsBool(target, 'immuniteMagieGolem') &&
+          (weaponStats.name.includes('sintégration') || weaponStats.name.includes('sintegration'))
+        ) {
+          target.effets.push({
+            effet: 'ralentiTemp',
+            duree: randomInteger(6),
+            message: messageOfEffetTemp('ralentiTemp')
+          });
+          target.diviseDmg++;
+        }
         if (options.ecraser) {
           target.messages.push(nomPerso(attaquant) + " saisit " + nomPerso(target) + " entre ses bras puissants");
           if (options.ecraser === true) {
@@ -20443,6 +20526,29 @@ var COFantasy = COFantasy || function() {
             }
             if (effets) {
               effets.forEach(function(ef) {
+                if (ef.finEffet) {
+                  let attr = tokenAttribute(target, ef.effet);
+                  if (attr.length === 0) {
+                    if (ef.effet.endsWith('Temp')) {
+                      let etat = ef.effet.substring(0, ef.effet.length - 4);
+                      if (!cof_states[etat]) return;
+                      if (getState(target, etat)) {
+                        setState(target, etat, false, evt);
+                        target.messages.push(nomPerso(target) + ' ' + messageFin(target, ef.message));
+                      }
+                    }
+                    return;
+                  }
+                  attr = attr[0];
+                  let feOptions = {
+                    print: function(msg) {
+                      target.messages.push(nomPerso(target) + ' ' + msg);
+                    }
+                  };
+                  let f = finDEffet(attr, ef.effet, attr.get('name'), target.charId, evt, feOptions);
+                  if (f && f.newToken) target.token = f.newToken;
+                  return;
+                }
                 if (((options.sortilege || options.mana !== undefined) &&
                     (predicateAsBool(target, 'liberteDAction') && (
                       ef.effet == 'apeureTemp' ||
@@ -20821,6 +20927,7 @@ var COFantasy = COFantasy || function() {
                         chanceRollId: options.chanceRollId,
                         type: ce.typeDmg,
                         necromancie: estNecromancie(options),
+                        bonus: predicateAsInt(target, 'bonusSaveContre_' + ce.etat, 0),
                       };
                       let rollId = 'etat_' + ce.etat + index + '_' + target.token.id;
                       save(ce.save, target, rollId, expliquer, saveOpts, evt,
@@ -21686,6 +21793,7 @@ var COFantasy = COFantasy || function() {
     perso.dansAuraDeProfanation = res;
     return res;
   }
+
   //s représente le save, avec une carac, une carac2 optionnelle et un seuil
   //expliquer est une fonction qui prend en argument un string et le publie
   // options peut contenir les champs :
@@ -21739,6 +21847,11 @@ var COFantasy = COFantasy || function() {
         afterSave(true, '');
         return;
       }
+    }
+    if (options.magique && predicateAsBool(target, 'immuniteMagieGolem')) {
+      expliquer(nomPerso(target) + " n'est pas affecté par cette magie.");
+      afterSave(true, '');
+      return;
     }
     if (s.fauchage) {
       if (s.fauchage <= taillePersonnage(target, 4)) {
@@ -29844,7 +29957,8 @@ var COFantasy = COFantasy || function() {
           msgRate: ", raté.",
           rolls: options.rolls,
           chanceRollId: options.chanceRollId,
-          type: options.type
+          type: options.type,
+          bonus: predicateAsInt(perso, 'bonusSaveContre_' + etat, 0),
         };
         let expliquer = function(s) {
           sendPerso(perso, s);
@@ -42972,6 +43086,12 @@ var COFantasy = COFantasy || function() {
                     case 'rock catching':
                       notes += d + '\n';
                       return;
+                    case 'division':
+                      predicats += 'divisionVase ';
+                      return;
+                    case 'evasion':
+                      predicats += 'esquiveDeLaMagie ';
+                      return;
                     default:
                       if (d.startsWith('channel resistance ')) {
                         let resChannel = parseInt(d.substring(19));
@@ -43114,6 +43234,12 @@ var COFantasy = COFantasy || function() {
                   case 'elemental':
                     predicats += 'nonVivant ';
                     return;
+                  case 'ooze':
+                    predicats += 'immunite_endormi immunite_paralyse immunite_etourdi immunite_percant immunite_tranchant ';
+                    return;
+                  case 'magic':
+                    predicats += 'immuniteMagieGolem ';
+                    return;
                   case 'undead':
                   case 'traits':
                   case 'effects':
@@ -43207,7 +43333,7 @@ var COFantasy = COFantasy || function() {
               let rdn = attr.get('current');
               if (rdn) {
                 rdn = '' + rdn;
-                rdn = rdn.replace('bludgeoning', 'contondant').replace('slashing', 'tranchant').replace('piercing', 'percant').replace('silver', 'argent').replace('magic', 'magique').replace('adamantine', 'adamantium').replace('cold iron', 'ferFroid').replace('/-', '');
+                rdn = rdn.replace('bludgeoning', 'contondant').replace('slashing', 'tranchant').replace('piercing', 'percant').replace('silver', 'argent').replace('magic', 'magique').replace('adamantine', 'adamantium').replace('cold iron', 'ferFroid').replace('/-', '').replace('/\xD1', ''); //\xD1 est le tiret long
                 if (rd === '') rd = rdn;
                 else rd += ', ' + rdn;
               }
@@ -43246,6 +43372,9 @@ var COFantasy = COFantasy || function() {
                   break;
                 case 'plant':
                   predicats += 'plante vegetatif ';
+                  break;
+                case 'ooze':
+                  predicats += 'vegetatif ';
                   break;
                 default:
                   if (npcType.includes('humanoid')) {
@@ -46412,6 +46541,7 @@ var COFantasy = COFantasy || function() {
     return copyOldTokenToNewToken(tokenMJ[0], perso, evt);
   }
 
+  //Change le token de perso en nouveauToken
   function copyOldTokenToNewToken(nouveauToken, perso, evt) {
     let token = perso.token;
     setToken(nouveauToken, 'layer', 'objects', evt);
@@ -46611,6 +46741,48 @@ var COFantasy = COFantasy || function() {
     }, options);
   }
 
+  // !cof-division-vase
+  function divisionVase(msg) {
+    getSelected(msg, function(selected, playerId) {
+      if (selected.length === 0) {
+        sendPlayer(msg, "Pas de vase à diviser", playerId);
+        return;
+      }
+      const evt = {
+        type: 'division de vase'
+      };
+      addEvent(evt);
+      iterSelected(selected, function(perso) {
+        let pv = parseInt(perso.token.get('bar1_value'));
+        if (isNaN(pv) || pv < 11) {
+          sendPlayer(msg, "Pas assez de PV (" + pv + ") pour se diviser", playerId);
+          return;
+        }
+        let pv_max = parseInt(perso.token.get('bar1_max'));
+        if (isNaN(pv_max) || pv_max < pv) pv_max = pv;
+        pv = Math.floor(pv / 2);
+        pv_max = Math.floor(pv_max / 2);
+        updateCurrentBar(perso, 1, pv, evt, pv_max);
+        // on diminue la taille
+        let width = perso.token.get('width');
+        let height = perso.token.get('height');
+        width = Math.ceil(width * 0.9);
+        height = Math.ceil(height * 0.9);
+        setToken(perso.token, 'width', width, evt);
+        setToken(perso.token, 'height', height, evt);
+        let tokenFields = getTokenFields(perso.token);
+        tokenFields.imgsrc = thumbImage(tokenFields.imgsrc);
+        let token2 = createObj('graphic', tokenFields);
+        if (!token2) {
+          sendPlayer(msg, "Pas moyen de copier, le faire à la main", playerId);
+        } else {
+          sendPlayer(msg, "token créé. Le bouger et le renommer", playerId);
+        }
+        sendPerso(perso, "se divise en deux");
+      });
+    });
+  }
+
   //n'est appelé qui si msg.content commence par !cof-
   function apiCommand(msg) {
     msg.content = msg.content.replace(/\s+/g, ' '); //remove duplicate whites
@@ -46626,6 +46798,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-agrandir-page':
         agrandirPage(msg);
+        return;
+      case '!cof-aile-forge-runique':
+        entrerAileForgeRunique(msg);
         return;
       case '!cof-animation-des-objets':
         animationDesObjets(msg);
@@ -46678,6 +46853,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-degainer':
         parseDegainer(msg);
         return;
+      case '!cof-division-vase':
+        divisionVase(msg);
+        return;
       case '!cof-dmg':
         parseDmgDirects(msg);
         return;
@@ -46686,6 +46864,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-effet-chaque-d20':
         setEffetChaqueD20(msg);
+        return;
+      case "!cof-effet-combat":
+        effetCombat(msg);
         return;
       case '!cof-effet-temp':
         parseEffetTemporaire(msg);
@@ -46703,6 +46884,9 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-explosion':
         attaqueExplosion(msg);
+        return;
+      case '!cof-fin-changement-de-forme':
+        finChangementDeForme(msg);
         return;
       case '!cof-hors-combat': //ancienne syntaxe, plus documentée
       case '!cof-fin-combat':
@@ -46784,9 +46968,6 @@ var COFantasy = COFantasy || function() {
       case '!cof-retour-boomerang':
         retourBoomerang(msg);
         return;
-      case '!cof-fin-changement-de-forme':
-        finChangementDeForme(msg);
-        return;
       case "!cof-rune-protection":
         runeProtection(msg);
         return;
@@ -46828,9 +47009,6 @@ var COFantasy = COFantasy || function() {
       case '!cof-tenebres-magiques':
         tenebresMagiques(msg);
         return;
-      case '!cof-aile-forge-runique':
-        entrerAileForgeRunique(msg);
-        return;
       case '!cof-undo':
         undoEvent();
         return;
@@ -46839,9 +47017,6 @@ var COFantasy = COFantasy || function() {
         return;
       case '!cof-zone-de-vie':
         lancerZoneDeVie(msg);
-        return;
-      case "!cof-effet-combat":
-        effetCombat(msg);
         return;
       case "!cof-effet":
         parseEffetIndetermine(msg);
@@ -47354,6 +47529,14 @@ var COFantasy = COFantasy || function() {
     },
     effetTempGenerique: {
       generic: true
+    },
+    endormiTemp: {
+      activation: "s'endort",
+      actif: "dort profondément",
+      fin: "se réveille",
+      msgSave: "résister au sommeil",
+      prejudiciable: true,
+      visible: true
     },
     etourdiTemp: {
       activation: "est étourdi : aucune action et -5 en DEF",
@@ -51418,8 +51601,7 @@ var COFantasy = COFantasy || function() {
           }
           token.bar1_link = attrPV[0].id;
           token.pageid = pageId;
-          token.imgsrc = token.imgsrc.replace('/med.png', '/thumb.png');
-          token.imgsrc = token.imgsrc.replace('/max.png', '/thumb.png');
+          token.imgsrc = thumbImage(token.imgsrc);
           let newToken = createObj('graphic', token);
           if (newToken) {
             setDefaultTokenForCharacter(character, newToken);
