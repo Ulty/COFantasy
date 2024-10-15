@@ -65,6 +65,15 @@ let COF_loaded = false;
 // - chargeFantastique : tout ce dont on a besoin pour une charge fantastique en cours (TODO: passer sous combat)
 // - eventId : compteur d'events pour avoir une id unique
 // - tokensTemps : liste de tokens à durée de vie limitée, effacés à la fin du combat
+//   - tid: id du token
+//   - name: le nom du token
+//   - duree: durée restante en rounds
+//   - init: init à laquelle diminuer la durée
+//   - intrusion: distance à laquelle le token s'active
+// - tokensActifs : map de pageid vers liste de tokens qui font une action quand on passe à côté.
+//   - tid: id du token
+//   - name: le nom du token
+//   - distance: la distance d'activation (par rapport au centre). Si pas présent, il faut intersecter avec le boîte du token (sans tenir compte de la rotation)
 // - effetAuD20 : les effets qui se produisent à chaque jet de dé.
 //   chaque effet est déterminé par un champ, puis pour chaque champ,
 //   - min: valeur minimale du dé pour déclencher
@@ -2093,6 +2102,84 @@ var COFantasy = COFantasy || function() {
       etat_de_marker[marker] = etat;
     }
     stateCOF.jetsEnCours = undefined;
+    //Vérification de la validité des id des tokens actifs
+    if (stateCOF.tokensActifs) {
+      let ta = stateCOF.tokensActifs;
+      let kept = [];
+      let removed = [];
+      for (let pageId in ta) {
+        if (!ta[pageId] || ta[pageId].length === 0) {
+          delete ta[pageId];
+          return;
+        }
+        let page = getObj('page', pageId);
+        if (page) kept.push(pageId);
+        else removed.push(pageId);
+      }
+      kept.forEach(function(pageId) {
+        let tokensToRemove = [];
+        ta[pageId].forEach(function(tt) {
+          let token = getObj('graphic', tt.tid);
+          if (token) return;
+          token = findObjs({
+            _type: 'graphic',
+            name: tt.name,
+            _pageid: pageId,
+            layer: 'gmlayer'
+          });
+          if (token.length === 0) {
+            tokensToRemove.push(tt.tid);
+            return;
+          }
+          if (token.length > 1) {
+            token = token.filter(function(tp) {
+        let s = trouveSortieEscalier(tp, true, false);
+        if (!s || !s.sortieEscalier) s = trouveSortieEscalier(tp, false, false);
+              return s && s.sortieEscalier;
+            });
+            if (token.length != 1) {
+            error("Il y a plus d'un token nommé " + tt.name + ", impossible de savoir lequel était automatiquement un TP", tt);
+            tokensToRemove.push(tt.tid);
+            return;
+            }
+          }
+          tt.tid = token[0].id;
+        });
+        //Coût quadratique, mais ça ne devrait pas arriver trop souvent (?)
+        tokensToRemove.forEach(function(tid) {
+          removeTokenActif(tid, pageId);
+        });
+      });
+      removed.forEach(function(pageId) {
+        ta[pageId].forEach(function(tt) {
+          let tokens = findObjs({
+            _type: 'graphic',
+            name: tt.name,
+            layer: 'gmlayer'
+          });
+          if (tokens.length === 0) {
+            return;
+          }
+          if (tokens.length > 1) {
+            tokens = tokens.filter(function(tp) {
+        let s = trouveSortieEscalier(tp, true, false);
+        if (!s || !s.sortieEscalier) s = trouveSortieEscalier(tp, false, false);
+              return s && s.sortieEscalier;
+            });
+            if (tokens.length != 1) {
+            error("Il y a plus d'un token nommé " + tt.name + ", impossible de savoir lequel était automatiquement un TP", tt);
+            return;
+            }
+          }
+          let token = tokens[0];
+          let pid = token.get('pageid');
+          ta[pid] = ta[pid] || [];
+          tt.tid = token.id;
+          ta[pid].push(tt);
+        });
+        delete ta[pageId];
+      });
+    }
   }
 
   function etatRendInactif(etat) {
@@ -8205,6 +8292,7 @@ var COFantasy = COFantasy || function() {
   }
 
   // callback(selected, playerId, aoe)
+  //  selected est une liste d'objets avec un seul champ, _id qui est une id de token
   function getSelected(msg, callback, options) {
     options = options || {};
     let playerId = getPlayerIdFromMsg(msg);
@@ -8217,7 +8305,7 @@ var COFantasy = COFantasy || function() {
     let count = args.length - 1;
     let called;
     let actif = options.lanceur;
-    if (actif === undefined) {
+    if (actif === undefined && !options.pasDeLanceur) {
       if (msg.selected !== undefined && msg.selected.length == 1) {
         actif = persoOfId(msg.selected[0]._id, msg.selected[0]._id, pageId);
       }
@@ -13370,6 +13458,11 @@ var COFantasy = COFantasy || function() {
       messageAttaqueDM("Force drainée", explications, options, -2);
     }
     let energieImpie = attributeAsInt(attaquant, 'energieImpie', 0);
+    if (attributeAsBool(attaquant, 'malchance')) {
+      let malchance = getIntValeurOfEffet(attaquant, 'malchance', 1);
+      attBonus -= malchance;
+      messageAttaqueDM("Malchance", explications, options, -malchance);
+    }
     if (energieImpie) {
       attBonus += energieImpie;
       messageAttaqueDM("Énergie impie", explications, options, energieImpie);
@@ -23879,7 +23972,7 @@ var COFantasy = COFantasy || function() {
     return toEvaluate.replace(/@{/g, "@{" + name + "|");
   }
 
-  // Retourne le diamètre d'un disque inscrit dans un carré de surface
+  // Retourne le diamètre en pixels d'un disque inscrit dans un carré de surface
   // équivalente à celle du token
   function tokenSizeAsCircle(token) {
     const surface = token.get('width') * token.get('height');
@@ -24330,14 +24423,16 @@ var COFantasy = COFantasy || function() {
     sendChat('', action);
   }
 
-  function getTokenTemp(tt) {
+  function getTokenTemp(tt, pageId) {
     let token = getObj('graphic', tt.tid);
     if (!token) {
       if (!tt.name) return;
-      token = findObjs({
+      let f = {
         _type: 'graphic',
         name: tt.name
-      });
+      };
+      if (pageId) f._pageid = pageId;
+      token = findObjs(f);
       if (token.length === 0) return;
       token = token[0];
     }
@@ -34259,6 +34354,168 @@ var COFantasy = COFantasy || function() {
 
   const labelsEscalier = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
 
+  //esc est un token, le reste est optionnel
+  function trouveSortieEscalier(esc, versLeHaut, loop, escaliers, tmaps) {
+    let escName; //Contiendra le nom de l'escalier vers lequel aller
+    //On regarde d'abord le gmnote
+    let gmNotes = esc.get('gmnotes');
+    try {
+      gmNotes = _.unescape(decodeURIComponent(gmNotes)).replace('&nbsp;', ' ');
+      gmNotes = linesOfNote(gmNotes);
+      gmNotes.find(function(l) {
+        if (versLeHaut) {
+          if (l.startsWith('monte:')) {
+            escName = l.substring(6);
+            return true;
+          }
+          if (l.startsWith('monter:')) {
+            escName = l.substring(7);
+            return true;
+          }
+          if (l.startsWith('bas:')) {
+            escName = l.substring(4);
+            return true;
+          }
+          return false;
+        } else {
+          if (l.startsWith('descend:')) {
+            escName = l.substring(8);
+            return true;
+          }
+          if (l.startsWith('descendre:')) {
+            escName = l.substring(10);
+            return true;
+          }
+          if (l.startsWith('haut:')) {
+            escName = l.substring(5);
+            return true;
+          }
+          return false;
+        }
+        return false;
+      });
+    } catch (uriError) {
+      log("Erreur de décodage URI dans la note GM de " + esc.get('name') + " : " + gmNotes);
+    }
+    let i; //index de label si on n'utilise pas gmnote
+    if (escName === undefined) {
+      //Si on n'a pas trouvé, on regarde le nom
+      escName = esc.get('name');
+      let l = escName.length;
+      if (l > 1) {
+        let label = escName.substr(l - 1, 1);
+        escName = escName.substr(0, l - 1);
+        i = labelsEscalier.indexOf(label);
+        if (versLeHaut) {
+          if (i == 11) {
+            if (loop) escName += labelsEscalier[0];
+          } else escName += labelsEscalier[i + 1];
+        } else {
+          if (i === 0) {
+            if (loop) escName += labelsEscalier[11];
+          } else escName += labelsEscalier[i - 1];
+        }
+      }
+    }
+    if (!escName) return;
+    //Ensuite on cherche l'escalier de nom escName
+    let escs = escaliers;
+    if (escName.startsWith('tmap_')) {
+      if (!tmaps) {
+        tmaps = findObjs({
+          _type: 'graphic',
+          layer: 'gmlayer'
+        });
+        tmaps = tmaps.filter(function(e) {
+          return e.get('name').startsWith('tmap_');
+        });
+      }
+      escs = tmaps;
+    }
+    if (!escs) {
+      let pageId = esc.get('pageid');
+      escs = findObjs({
+        _type: 'graphic',
+        _pageid: pageId,
+        layer: 'gmlayer'
+      });
+    }
+    let sortieEscalier = escs.find(function(esc2) {
+      return esc2.get('name') == escName;
+    });
+    if (sortieEscalier === undefined && i !== undefined && loop) {
+      if (i > 0) { //sortie par le plus petit
+        escName = escName.substr(-1) + 'A';
+        sortieEscalier = escs.find(function(esc2) {
+          return esc2.get('name') == escName;
+        });
+      } else {
+        sortieEscalier = findEsc(escs, escName.substr(-1), 10);
+      }
+    }
+    return {
+      sortieEscalier,
+      tmaps
+    };
+  }
+
+  function prendreEscalier(perso, pageId, sortieEscalier) {
+    let token = perso.token;
+    let left = sortieEscalier.get('left');
+    let top = sortieEscalier.get('top');
+    let newPageId = sortieEscalier.get('pageid');
+    //Déplacement du token
+    if (newPageId == pageId) {
+      token.set('left', left);
+      token.set('top', top);
+    } else {
+      //On change de carte, il faut donc copier le token
+      let tokenObj = JSON.parse(JSON.stringify(token));
+      tokenObj._pageid = newPageId;
+      //On met la taille du token à jour en fonction des échelles des cartes.
+      let ratio = computeScale(pageId) / computeScale(newPageId);
+      if (ratio < 0.9 || ratio > 1.1) {
+        if (ratio < 0.25) ratio = 0.25;
+        else if (ratio > 4) ratio = 4;
+        tokenObj.width *= ratio;
+        tokenObj.height *= ratio;
+      }
+      tokenObj.imgsrc = normalizeTokenImg(tokenObj.imgsrc);
+      tokenObj.left = left;
+      tokenObj.top = top;
+      let newToken = createObj('graphic', tokenObj);
+      if (newToken === undefined) {
+        error("Impossible de copier le token, et donc de faire le changement de carte", tokenObj);
+        return;
+      }
+    }
+    //On déplace ensuite le joueur.
+    let character = getObj('character', perso.charId);
+    if (character === undefined) return;
+    let charControlledby = character.get('controlledby');
+    if (charControlledby === '') {
+      //Seul le MJ contrôle le personnage
+      let players = findObjs({
+        _type: 'player',
+        online: true
+      });
+      let gm = players.find(function(p) {
+        return playerIsGM(p.id);
+      });
+      if (gm) {
+        if (newPageId != pageId) movePlayerToPage(gm.id, pageId, newPageId);
+        sendPing(left, top, newPageId, gm.id, true, gm.id);
+      }
+    } else {
+      charControlledby.split(",").forEach(function(pid) {
+        if (newPageId != pageId) movePlayerToPage(pid, pageId, newPageId);
+        sendPing(left, top, newPageId, pid, true, pid);
+      });
+    }
+    //Enfin, on efface le token de départ si on a changé de page
+    if (newPageId != pageId) token.remove();
+  }
+
   function escalier(msg) {
     getSelected(msg, function(selected, playerId) {
       if (selected.length === 0) {
@@ -34299,151 +34556,15 @@ var COFantasy = COFantasy || function() {
           if (sortieEscalier) return;
           if (intersection(posX, sizeX, esc.get('left'), esc.get('width')) &&
             intersection(posY, sizeY, esc.get('top'), esc.get('height'))) {
-            let escName; //Contiendra le nom de l'escalier vers lequel aller
-            //On regarde d'abord le gmnote
-            let gmNotes = esc.get('gmnotes');
-            try {
-              gmNotes = _.unescape(decodeURIComponent(gmNotes)).replace('&nbsp;', ' ');
-              gmNotes = linesOfNote(gmNotes);
-              gmNotes.find(function(l) {
-                if (versLeHaut) {
-                  if (l.startsWith('monte:')) {
-                    escName = l.substring(6);
-                    return true;
-                  }
-                  if (l.startsWith('monter:')) {
-                    escName = l.substring(7);
-                    return true;
-                  }
-                  if (l.startsWith('bas:')) {
-                    escName = l.substring(4);
-                    return true;
-                  }
-                  return false;
-                } else {
-                  if (l.startsWith('descend:')) {
-                    escName = l.substring(8);
-                    return true;
-                  }
-                  if (l.startsWith('descendre:')) {
-                    escName = l.substring(10);
-                    return true;
-                  }
-                  if (l.startsWith('haut:')) {
-                    escName = l.substring(5);
-                    return true;
-                  }
-                  return false;
-                }
-                return false;
-              });
-            } catch (uriError) {
-              log("Erreur de décodage URI dans la note GM de " + esc.get('name') + " : " + gmNotes);
-            }
-            let i; //index de label si on n'utilise pas gmnote
-            if (escName === undefined) {
-              //Si on n'a pas trouvé, on regarde le nom
-              escName = esc.get('name');
-              let l = escName.length;
-              if (l > 1) {
-                let label = escName.substr(l - 1, 1);
-                escName = escName.substr(0, l - 1);
-                i = labelsEscalier.indexOf(label);
-                if (versLeHaut) {
-                  if (i == 11) {
-                    if (loop) escName += labelsEscalier[0];
-                  } else escName += labelsEscalier[i + 1];
-                } else {
-                  if (i === 0) {
-                    if (loop) escName += labelsEscalier[11];
-                  } else escName += labelsEscalier[i - 1];
-                }
-              }
-            }
-            if (!escName) return;
-            //Ensuite on cherche l'escalier de nom escName
-            let escs = escaliers;
-            if (escName.startsWith('tmap_')) {
-              if (!tmaps) {
-                tmaps = findObjs({
-                  _type: 'graphic',
-                  layer: 'gmlayer'
-                });
-                tmaps = tmaps.filter(function(e) {
-                  return e.get('name').startsWith('tmap_');
-                });
-              }
-              escs = tmaps;
-            }
-            sortieEscalier = escs.find(function(esc2) {
-              return esc2.get('name') == escName;
-            });
-            if (sortieEscalier === undefined && i !== undefined && loop) {
-              if (i > 0) { //sortie par le plus petit
-                escName = escName.substr(-1) + 'A';
-                sortieEscalier = escs.find(function(esc2) {
-                  return esc2.get('name') == escName;
-                });
-              } else {
-                sortieEscalier = findEsc(escs, escName.substr(-1), 10);
-              }
+            let s = trouveSortieEscalier(esc, versLeHaut, loop, escaliers, tmaps);
+            if (s) {
+              sortieEscalier = s.sortieEscalier;
+              tmaps = s.tmaps;
             }
           }
         });
         if (sortieEscalier) {
-          let left = sortieEscalier.get('left');
-          let top = sortieEscalier.get('top');
-          let newPageId = sortieEscalier.get('pageid');
-          //Déplacement du token
-          if (newPageId == pageId) {
-            token.set('left', left);
-            token.set('top', top);
-          } else {
-            //On change de carte, il faut donc copier le token
-            let tokenObj = JSON.parse(JSON.stringify(token));
-            tokenObj._pageid = newPageId;
-            //On met la taille du token à jour en fonction des échelles des cartes.
-            let ratio = computeScale(pageId) / computeScale(newPageId);
-            if (ratio < 0.9 || ratio > 1.1) {
-              if (ratio < 0.25) ratio = 0.25;
-              else if (ratio > 4) ratio = 4;
-              tokenObj.width *= ratio;
-              tokenObj.height *= ratio;
-            }
-            tokenObj.imgsrc = normalizeTokenImg(tokenObj.imgsrc);
-            tokenObj.left = left;
-            tokenObj.top = top;
-            let newToken = createObj('graphic', tokenObj);
-            if (newToken === undefined) {
-              error("Impossible de copier le token, et donc de faire le changement de carte", tokenObj);
-              return;
-            }
-          }
-          //On déplace ensuite le joueur.
-          let character = getObj('character', perso.charId);
-          if (character === undefined) return;
-          let charControlledby = character.get('controlledby');
-          if (charControlledby === '') {
-            //Seul le MJ contrôle le personnage
-            let players = findObjs({
-              _type: 'player',
-              online: true
-            });
-            let gm = players.find(function(p) {
-              return playerIsGM(p.id);
-            });
-            if (gm) {
-              if (newPageId != pageId) movePlayerToPage(gm.id, pageId, newPageId);
-              sendPing(left, top, newPageId, gm.id, true, gm.id);
-            }
-          } else {
-            charControlledby.split(",").forEach(function(pid) {
-              if (newPageId != pageId) movePlayerToPage(pid, pageId, newPageId);
-              sendPing(left, top, newPageId, pid, true, pid);
-            });
-          }
-          //Enfin, on efface le token de départ si on a changé de page
-          if (newPageId != pageId) token.remove();
+          prendreEscalier(perso, pageId, sortieEscalier);
           return;
         }
         let err = nomPerso(perso) + " n'est pas sur un escalier";
@@ -34454,6 +34575,100 @@ var COFantasy = COFantasy || function() {
         sendPlayer(msg, err, playerId);
       });
     }); //fin getSelected
+  }
+
+  function removeTokenActif(tid, pageId) {
+    let ta = stateCOF.tokensActifs;
+    ta[pageId] = ta[pageId].filter(function(tt) {
+      return tt.tid != tid;
+    });
+    if (ta[pageId] == []) delete ta[pageId];
+  }
+
+  function mettreFinATPAuto(msg, options) {
+    getSelected(msg, function(selected, playerId) {
+      if (selected.length === 0) {
+        sendPlayer(msg, "Aucun token sélectionné pour !cof-tp-auto off", playerId);
+        return;
+      }
+      let ta = stateCOF.tokensActifs;
+      if (ta) return;
+      selected.forEach(function(sel) {
+        let token = getObj('graphic', sel._id);
+        if (token === undefined) return;
+        let pageId = token.get('pageid');
+        if (!ta[pageId]) {
+          sendPlayer(msg, token.get('name') + " n'était pas en TP automatique", playerId);
+          return;
+        }
+        removeTokenActif(token.id, pageId);
+        sendPlayer(msg, token.get('name') + " n'est plus en TP automatique", playerId);
+      });
+    }, {
+      pasDeLanceur: true
+    });
+  }
+
+  //!cof-tp-auto ['off'|rayon]
+  function setTPAuto(msg) {
+    let options = parseOptions(msg);
+    if (options === undefined) return;
+    let cmd = options.cmd;
+    if (cmd === undefined) {
+      error("Problème de parse options", msg.content);
+      return;
+    }
+    let r;
+    if (cmd.length > 1) {
+      if (cmd[1] == 'off') {
+        mettreFinATPAuto(msg, options);
+        return;
+      }
+      r = parseFloat(cmd[1]);
+      if (isNaN(r) || r < 0) {
+        sendPlayer(msg, "Argument de !cof-tp-auto invalide ( " + cmd[1] + ")");
+        return;
+      }
+    }
+    getSelected(msg, function(selected, playerId) {
+      if (selected.length === 0) {
+        sendPlayer(msg, "Aucun token sélectionné pour !cof-tp-auto", playerId);
+        return;
+      }
+      selected.forEach(function(sel) {
+        let token = getObj('graphic', sel._id);
+        if (token === undefined) return;
+        if (token.get('layer') != 'gmlayer') {
+          sendPlayer(msg, "TP ne peut concerner que des tokens du layer MJ", playerId);
+          return;
+        }
+        stateCOF.tokensActifs = stateCOF.tokensActifs || {};
+        let ta = stateCOF.tokensActifs;
+        let pageId = token.get('pageid');
+        ta[pageId] = ta[pageId] || [];
+        let present = ta[pageId].find(function(tt) {
+          return tt.tid == token.id;
+        });
+        //On converti la distance d'intrusion en pixels
+        let scale = computeScale(pageId);
+        let rayon = (r / scale) * PIX_PER_UNIT;
+        if (present) {
+          present.rayon = rayon;
+          sendPlayer(msg, "Le rayon de " + token.get('name') + " devient " + r, playerId);
+          return;
+        }
+        //token pas déjà dans la liste des tokens actifs
+        let tt = {
+          tid: token.id,
+          name: token.get('name'),
+          rayon
+        };
+        ta[pageId].push(tt);
+        sendPlayer(msg, token.get('name') + " devient actif, de rayon " + r, playerId);
+      });
+    }, {
+      pasDeLanceur: true
+    });
   }
 
   function defautDansLaCuirasse(msg) {
@@ -43225,6 +43440,9 @@ var COFantasy = COFantasy || function() {
                   case 'sleep':
                     predicats += 'immunite_endormi ';
                     return;
+                  case 'stunning':
+                    predicats += 'immunite_etourdi ';
+                    return;
                   case 'construct':
                     predicats += 'sansEsprit creatureArtificielle immuniteSaignement ';
                     return;
@@ -43240,11 +43458,15 @@ var COFantasy = COFantasy || function() {
                   case 'magic':
                     predicats += 'immuniteMagieGolem ';
                     return;
+                  case 'critical':
+                    predicats += 'immuniteAuxCritiques ';
+                    return;
                   case 'undead':
                   case 'traits':
                   case 'effects':
                   case 'plants':
                   case 'and':
+                  case 'hits':
                     return;
                   default:
                     log("Immunité à " + i + " non traitée");
@@ -43333,7 +43555,7 @@ var COFantasy = COFantasy || function() {
               let rdn = attr.get('current');
               if (rdn) {
                 rdn = '' + rdn;
-                rdn = rdn.replace('bludgeoning', 'contondant').replace('slashing', 'tranchant').replace('piercing', 'percant').replace('silver', 'argent').replace('magic', 'magique').replace('adamantine', 'adamantium').replace('cold iron', 'ferFroid').replace('/-', '').replace('/\xD1', ''); //\xD1 est le tiret long
+                rdn = rdn.replace('bludgeoning', 'contondant').replace('slashing', 'tranchant').replace('piercing', 'percant').replace('silver', 'argent').replace('magic', 'magique').replace('adamantine', 'adamantium').replace('cold iron', 'ferFroid').replace(' or ', '_').replace('good', 'beni').replace('/-', '').replace('/\xD1', ''); //\xD1 est le tiret long
                 if (rd === '') rd = rdn;
                 else rd += ', ' + rdn;
               }
@@ -47009,6 +47231,9 @@ var COFantasy = COFantasy || function() {
       case '!cof-tenebres-magiques':
         tenebresMagiques(msg);
         return;
+      case '!cof-tp-auto':
+        setTPAuto(msg);
+        return;
       case '!cof-undo':
         undoEvent();
         return;
@@ -48637,6 +48862,12 @@ var COFantasy = COFantasy || function() {
       activationF: "est rendue furieuse par le coup critique",
       actif: "est en furie draconide",
       fin: "retrouve son calme"
+    },
+    malchance: {
+      activation: "entre dans une aura de malchance",
+      actif: "est dans une aura de malchance",
+      fin: "n'est plus dans une aura de malchance",
+      prejudiciable: true,
     },
     protectionContreLeMal: {
       activation: "reçoit une bénédiction de protection contre le mal",
@@ -50515,8 +50746,9 @@ var COFantasy = COFantasy || function() {
       stateCOF.tokensTemps.forEach(function(tt) {
         if (!tt.intrusion) return;
         //tt.intrusion est exprimé en pixels
-        let bombe = getTokenTemp(tt);
+        let bombe = getTokenTemp(tt, pageId);
         if (!bombe) return;
+        if (bombe.get('pageid') != pageId) return;
         let pb = pointOfToken(bombe);
         let distance = distancePoints(pt_depart, pb);
         if (distance < tt.intrusion) return; //On est parti de la zone de départ
@@ -50550,6 +50782,43 @@ var COFantasy = COFantasy || function() {
           return tt.id == collisions[0].tt.id;
         });
       }
+    }
+    if (stateCOF.tokensActifs && stateCOF.tokensActifs[pageId]) {
+      let pt_arrivee = {
+        x,
+        y
+      };
+      let pt_depart = {
+        x: prev.left,
+        y: prev.top
+      };
+      let rayon = tokenSizeAsCircle(token) / 2;
+      let estTP;
+      stateCOF.tokensActifs[pageId].forEach(function(tt) {
+        if (estTP) return;
+        let tp = getTokenTemp(tt, pageId);
+        if (!tp) {
+          removeTokenActif(tt.id, pageId);
+          return;
+        }
+        if (tt.rayon === undefined) {
+          if (!(intersection(x, token.get('width'), tp.get('left'), tp.get('width')) &&
+              intersection(y, token.get('height'), tp.get('top'), tp.get('height')))) return;
+        } else {
+          let pb = pointOfToken(tp);
+          let distance = distancePoints(pt_depart, pb);
+          if (distance < tt.rayon) return; //On est parti de la zone de départ
+          let distToTrajectory =
+            distancePixTokenSegment(tp, pt_depart, pt_arrivee);
+          if (distToTrajectory > tt.rayon + rayon) return;
+        }
+        let s = trouveSortieEscalier(tp, true, false);
+        if (!s || !s.sortieEscalier) s = trouveSortieEscalier(tp, false, false);
+        if (!s || !s.sortieEscalier) return;
+        prendreEscalier(perso, pageId, s.sortieEscalier);
+        estTP = true;
+      });
+      if (estTP) return;
     }
     //Effets des auras, asynchrone
     if (stateCOF.combat && stateCOF.combat.auras) {
