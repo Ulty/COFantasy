@@ -1,4 +1,4 @@
-//Dernière modification : jeu. 07 nov. 2024,  12:54
+//Dernière modification : jeu. 07 nov. 2024,  07:13
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -2133,14 +2133,14 @@ var COFantasy = COFantasy || function() {
           }
           if (token.length > 1) {
             token = token.filter(function(tp) {
-        let s = trouveSortieEscalier(tp, true, false);
-        if (!s || !s.sortieEscalier) s = trouveSortieEscalier(tp, false, false);
+              let s = trouveSortieEscalier(tp, true, false);
+              if (!s || !s.sortieEscalier) s = trouveSortieEscalier(tp, false, false);
               return s && s.sortieEscalier;
             });
             if (token.length != 1) {
-            error("Il y a plus d'un token nommé " + tt.name + ", impossible de savoir lequel était automatiquement un TP", tt);
-            tokensToRemove.push(tt.tid);
-            return;
+              error("Il y a plus d'un token nommé " + tt.name + ", impossible de savoir lequel était automatiquement un TP", tt);
+              tokensToRemove.push(tt.tid);
+              return;
             }
           }
           tt.tid = token[0].id;
@@ -2162,13 +2162,13 @@ var COFantasy = COFantasy || function() {
           }
           if (tokens.length > 1) {
             tokens = tokens.filter(function(tp) {
-        let s = trouveSortieEscalier(tp, true, false);
-        if (!s || !s.sortieEscalier) s = trouveSortieEscalier(tp, false, false);
+              let s = trouveSortieEscalier(tp, true, false);
+              if (!s || !s.sortieEscalier) s = trouveSortieEscalier(tp, false, false);
               return s && s.sortieEscalier;
             });
             if (tokens.length != 1) {
-            error("Il y a plus d'un token nommé " + tt.name + ", impossible de savoir lequel était automatiquement un TP", tt);
-            return;
+              error("Il y a plus d'un token nommé " + tt.name + ", impossible de savoir lequel était automatiquement un TP", tt);
+              return;
             }
           }
           let token = tokens[0];
@@ -37933,7 +37933,7 @@ var COFantasy = COFantasy || function() {
     }
     let druide = persoOfId(cmd[1], cmd[1], options.pageId);
     if (druide === undefined) {
-      error("Le premier argument de !cof-animer-arbre n'est pas un token valie", cmd);
+      error("Le premier argument de !cof-animer-arbre n'est pas un token valide", cmd);
       return;
     }
     let tokenArbre = getObj('graphic', cmd[2]);
@@ -37942,7 +37942,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     if (tokenArbre.get('represents') !== '') {
-      sendPerso(druide, "ne peut pas animer " + tokenArbre.get('name'));
+      sendPerso(druide, "ne peut pas animer " + tokenArbre.get('name')+", car il représente déjà un personnage.");
       return;
     }
     if (options.portee !== undefined) {
