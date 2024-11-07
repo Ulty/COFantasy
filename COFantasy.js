@@ -1,4 +1,4 @@
-//Dernière modification : ven. 04 oct. 2024,  11:09
+//Dernière modification : jeu. 07 nov. 2024,  12:54
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -4766,9 +4766,9 @@ var COFantasy = COFantasy || function() {
               };
               let resa = restoreTokenOfPerso(perso, evt);
               if (resa) {
-                setToken(res.newToken, 'width', token.get('width'), evt);
-                setToken(res.newToken, 'height', token.get('height'), evt);
-                token = res.newToken;
+                setToken(resa.newToken, 'width', token.get('width'), evt);
+                setToken(resa.newToken, 'height', token.get('height'), evt);
+                token = resa.newToken;
                 res = resa;
               }
               let apv = tokenAttribute(perso, 'anciensPV');
@@ -6318,7 +6318,7 @@ var COFantasy = COFantasy || function() {
           }
         });
       }
-      if ((act.startsWith('!cof-lancer-sort') || act.startsWith('!cof-immunite-guerisseur')) &&
+      if ((act.startsWith('!cof-lancer-sort ') || act.startsWith('!cof-immunite-guerisseur ') || act.startsWith('!cof-lumiere ')) &&
         act.indexOf('--lanceur') == -1) {
         act += " --lanceur " + tid;
       }
@@ -22994,7 +22994,7 @@ var COFantasy = COFantasy || function() {
           current = 5 - n;
           if (current < 0) current = 0;
         }
-        attrPR = createObj("attribute", {
+        attrPR = createObj('attribute', {
           characterid: perso.charId,
           name: 'pr',
           current,
@@ -23490,7 +23490,7 @@ var COFantasy = COFantasy || function() {
                 let dmTemp;
                 if (tmpHitAttr.length === 0) {
                   dmTemp =
-                    createObj("attribute", {
+                    createObj('attribute', {
                       characterid: charId,
                       name: 'DMTEMP',
                       current: 0,
@@ -33325,7 +33325,7 @@ var COFantasy = COFantasy || function() {
       // si le consommable n'a pas été trouvé, on le crée avec une valeur de nb
       if (!found) {
         let pref = 'repeating_equipement_' + generateRowID() + '_';
-        let attre = createObj("attribute", {
+        let attre = createObj('attribute', {
           name: pref + 'equip_nom',
           current: nom,
           characterid: perso.charId
@@ -36633,7 +36633,7 @@ var COFantasy = COFantasy || function() {
     if (!found) {
       if (m1) {
         let pref = 'repeating_equipement_' + generateRowID() + '_';
-        let attre = createObj("attribute", {
+        let attre = createObj('attribute', {
           name: pref + 'equip_nom',
           current: consName,
           characterid: perso2.charId
@@ -36641,7 +36641,7 @@ var COFantasy = COFantasy || function() {
         evt.attributes.push({
           attribute: attre,
         });
-        attre = createObj("attribute", {
+        attre = createObj('attribute', {
           name: pref + 'equip_effet',
           current: effet,
           characterid: perso2.charId
@@ -36650,7 +36650,7 @@ var COFantasy = COFantasy || function() {
           attribute: attre,
         });
       } else {
-        let attr2 = createObj("attribute", {
+        let attr2 = createObj('attribute', {
           name: attrName,
           current: 1,
           max: effet,
