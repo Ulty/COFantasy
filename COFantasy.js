@@ -1,4 +1,4 @@
-//Dernière modification : jeu. 07 nov. 2024,  07:13
+//Dernière modification : jeu. 16 janv. 2025,  04:21
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -22001,7 +22001,7 @@ var COFantasy = COFantasy || function() {
       expliquer(nomPerso(target) + ' ' + msg);
     });
     let bonusAttrs = [];
-    let bonusPreds = [];
+    let bonusPreds = ['bonusSave'];
     let seuil = s.seuil;
     if (s.contact && options.attaquant && distanceCombat(options.attaquant.token, target.token) === 0) {
       seuil = s.contact;
@@ -24972,6 +24972,11 @@ var COFantasy = COFantasy || function() {
   }
 
   function parseOptions(msg) {
+    let opts = msg.content.split(' --');
+    let cmd = opts.shift().split(' ');
+    cmd = cmd.filter(function(c) {
+      return c !== '';
+    });
     let pageId, playerId;
     if (msg.selected && msg.selected.length > 0) {
       let firstSelected = getObj('graphic', msg.selected[0]._id);
@@ -24984,11 +24989,6 @@ var COFantasy = COFantasy || function() {
       playerId = getPlayerIdFromMsg(msg);
       pageId = getPageId(playerId);
     }
-    let opts = msg.content.split(' --');
-    let cmd = opts.shift().split(' ');
-    cmd = cmd.filter(function(c) {
-      return c !== '';
-    });
     let options = {
       pageId: pageId,
       playerId: playerId,
@@ -31865,6 +31865,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       iterSelected(selected, function(perso) {
+        if (options.lanceur && options.lanceur.otken.id == perso.token.id) return;
         if (options.portee !== undefined && options.lanceur) {
           let distance = distanceCombat(options.lanceur.token, perso.token, pageId);
           if (distance > options.portee) {
@@ -46895,7 +46896,7 @@ var COFantasy = COFantasy || function() {
               charId: formeChar.id
             }, 'pv', 0);
             if (pv > 0) {
-              setTokenAttr(perso, 'PVTempChangementDeForme', Math.ceil(pv / 10), evt);
+              setTokenAttr(perso, 'PVTempChangementDeForme', Math.ceil(pv / 5), evt);
             }
           }
           stateCOF.predicats[perso.charId] = undefined;
@@ -51235,7 +51236,7 @@ var COFantasy = COFantasy || function() {
   // assure un nom unique en ajoutant un numéro
   // On en profite aussi pour mettre certaines valeurs par défaut
   // retourne un perso si c'est un token de personnage
-  //Si la barre de vie est liée, on met à jour les valeurs, ce n'est plus fait automatiquement oar Roll20
+  //Si la barre de vie est liée, on met à jour les valeurs, ce n'est plus fait automatiquement par Roll20
   function renameToken(token, tokenName) {
     let charId = token.get('represents');
     if (charId === undefined || charId === '') return;
