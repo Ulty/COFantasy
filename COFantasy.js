@@ -1,4 +1,4 @@
-//Dernière modification : jeu. 16 janv. 2025,  04:21
+//Dernière modification : ven. 17 janv. 2025,  02:12
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -6318,7 +6318,7 @@ var COFantasy = COFantasy || function() {
           }
         });
       }
-      if ((act.startsWith('!cof-lancer-sort ') || act.startsWith('!cof-immunite-guerisseur ') || act.startsWith('!cof-lumiere ')) &&
+      if ((act.startsWith('!cof-lancer-sort ') || act.startsWith('!cof-immunite-guerisseur ') || act.startsWith('!cof-lumiere ') || act.startsWith('!cof-peur')) &&
         act.indexOf('--lanceur') == -1) {
         act += " --lanceur " + tid;
       }
@@ -31865,7 +31865,7 @@ var COFantasy = COFantasy || function() {
         return;
       }
       iterSelected(selected, function(perso) {
-        if (options.lanceur && options.lanceur.otken.id == perso.token.id) return;
+        if (options.lanceur && options.lanceur.token.id == perso.token.id) return;
         if (options.portee !== undefined && options.lanceur) {
           let distance = distanceCombat(options.lanceur.token, perso.token, pageId);
           if (distance > options.portee) {
@@ -37943,7 +37943,7 @@ var COFantasy = COFantasy || function() {
       return;
     }
     if (tokenArbre.get('represents') !== '') {
-      sendPerso(druide, "ne peut pas animer " + tokenArbre.get('name')+", car il représente déjà un personnage.");
+      sendPerso(druide, "ne peut pas animer " + tokenArbre.get('name') + ", car il représente déjà un personnage.");
       return;
     }
     if (options.portee !== undefined) {
@@ -46705,22 +46705,75 @@ var COFantasy = COFantasy || function() {
     }, options);
   }
 
-  function replaceTokenOfPerso(perso, token, evt) {
+  //Si tokenFields est présent, remplace aussi les tokens sur les autres pages.
+  function replaceTokenOfPerso(perso, token, evt, tokenFields) {
     if (token) {
       evt.tokens = evt.tokens || [];
       evt.tokens.push(token);
+      let otherTokens;
+      if (tokenFields) {
+    let link = perso.token.get('bar1_link');
+    if (link !== '') {
+      otherTokens = findObjs({
+        _type: 'graphic',
+        _subtype: 'token',
+        layer: 'objects',
+        represents: perso.charId,
+      });
+      if (otherTokens.length < 3) {
+        otherTokens = false;
+      } else {
+        let pageId = perso.token.get('pageid');
+        otherTokens = otherTokens.filter(function(t) {
+          return t.id !== perso.token.id && t.get('bar1_link') == link && t.get('pageid') != pageId;
+        });
+      }
+    }
+      }
       //On met l'ancien token dans le gmlayer, car si l'image vient du marketplace, il est impossible de le recréer depuis l'API
       setToken(perso.token, 'layer', 'gmlayer', evt);
       setTokenAttr(perso, 'changementDeToken', true, evt);
       if (stateCOF.combat) replaceInTurnTracker(perso.token.id, token.id, evt);
       perso.token = token;
+      if (!otherTokens) return;
+      otherTokens.forEach(function(oldToken) {
+        tokenFields._pageid = oldToken.get('pageid');
+        tokenFields.left = oldToken.get('left');
+        tokenFields.top = oldToken.get('top');
+        tokenFields.rotation = oldToken.get('rotation');
+        let newToken = createObj('graphic', tokenFields);
+      if (newToken) {
+      evt.tokens.push(newToken);
+        setToken(oldToken, 'layer', 'gmlayer', evt);
+      }
+      });
     }
   }
 
   function restoreTokenOfPerso(perso, evt) {
     let tokenChange = attributeAsBool(perso, 'changementDeToken');
     if (!tokenChange) return;
+    removeTokenAttr(perso, 'changementDeToken', evt);
+    let res;
     let token = perso.token;
+    //On cherche s'il y a d'autres tokens pour le même personnage
+    let otherTokens;
+    let link = perso.token.get('bar1_link');
+    if (link !== '') {
+      otherTokens = findObjs({
+        _type: 'graphic',
+        _subtype: 'token',
+        layer: 'objects',
+        represents: perso.charId,
+      });
+      if (otherTokens.length < 2) {
+        otherTokens = false;
+      } else {
+        otherTokens = otherTokens.filter(function(t) {
+          return t.id !== token.id && t.get('bar1_link') == link;
+        });
+      }
+    }
     let tokenMJ =
       findObjs({
         _type: 'graphic',
@@ -46740,7 +46793,6 @@ var COFantasy = COFantasy || function() {
           name: token.get('name')
         });
     }
-    removeTokenAttr(perso, 'changementDeToken', evt);
     if (tokenMJ.length === 0) {
       let character = getObj('character', perso.charId);
       character.get('_defaulttoken', function(defToken) {
@@ -46753,7 +46805,7 @@ var COFantasy = COFantasy || function() {
           defToken.pageid = token.get('pageid');
           let newToken = createObj('graphic', defToken);
           if (newToken) {
-            copyOldTokenToNewToken(newToken, perso, evt);
+            res = copyOldTokenToNewToken(newToken, perso, evt);
             return;
           }
         }
@@ -46761,7 +46813,23 @@ var COFantasy = COFantasy || function() {
       });
       return;
     }
-    return copyOldTokenToNewToken(tokenMJ[0], perso, evt);
+    res = copyOldTokenToNewToken(tokenMJ[0], perso, evt);
+    if (!otherTokens) return;
+    otherTokens.forEach(function(token) {
+      let tokenMJ =
+        findObjs({
+          _type: 'graphic',
+          _subtype: 'token',
+          _pageid: token.get('pageid'),
+          layer: 'gmlayer',
+          represents: perso.charId,
+          name: token.get('name')
+        });
+      if (tokenMJ.length === 0) return;
+      let otherPerso = {token, charId:perso.charId};
+      copyOldTokenToNewToken(tokenMJ[0], otherPerso, evt);
+    });
+    return res;
   }
 
   //Change le token de perso en nouveauToken
@@ -46857,7 +46925,7 @@ var COFantasy = COFantasy || function() {
               tokenFields.height += token.height / 2;
             }
             let newToken = createObj('graphic', tokenFields);
-            replaceTokenOfPerso(perso, newToken, evt);
+            replaceTokenOfPerso(perso, newToken, evt, tokenFields);
             perso.toutesLesAttaques = undefined;
           } else {
             sendChat('', "/w GM L'image du token de " + nomPerso(perso) + " n'est pas utilisable par le script. Utiliser une image de votre librairie.");
@@ -51395,6 +51463,40 @@ var COFantasy = COFantasy || function() {
       degainerArme(perso, arme, {}, {
         secret: true
       });
+    }
+    //Si le personnage est transformé, il faut changer le token
+    if (token.get('layer') == 'objects') {
+    let forme = attributeAsString(perso, 'changementDeForme');
+    if (forme) {
+      let formeChar = findObjs({
+        _type: 'character',
+        name: forme
+      });
+      if (formeChar.length === 0) {
+        error("Impossible trouver de fiche pour \"" + forme + "\"", perso);
+        return;
+      }
+      formeChar = formeChar[0];
+      formeChar.get('_defaulttoken', function(tokenTransforme) {
+        if (!tokenTransforme) return;
+        tokenTransforme = JSON.parse(tokenTransforme);
+        let tokenFields = getTokenFields(perso.token);
+        tokenFields.imgsrc = thumbImage(tokenTransforme.imgsrc);
+        tokenFields.width = tokenTransforme.width;
+        tokenFields.height = tokenTransforme.height;
+        if (attributeAsBool(perso, 'agrandissement')) {
+          tokenFields.width += tokenTransforme.width / 2;
+          tokenFields.height += tokenTransforme.height / 2;
+        }
+        let newToken = createObj('graphic', tokenFields);
+        let evt = {
+          type: "Mise à jour du changement de forme"
+        };
+        addEvent(evt);
+        replaceTokenOfPerso(perso, newToken, evt);
+        perso.toutesLesAttaques = undefined;
+      });
+    }
     }
     synchronisationDesLumieres(perso);
   }
