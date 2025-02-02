@@ -1,4 +1,4 @@
-//Dernière modification : sam. 01 févr. 2025,  01:39
+//Dernière modification : dim. 02 févr. 2025,  09:29
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -19061,6 +19061,18 @@ var COFantasy = COFantasy || function() {
         target.messages.push(nomPerso(target) + " ne peut pas saigner");
       }
       return;
+    }
+    if (ef.effet.endsWith('Temp')) {
+      let etat = ef.effet.substring(0, ef.effet.length-4);
+      if (predicateAsBool(target, 'immunite_'+etat)) {
+        sendPerso(target, 'ne peut pas être ' + stringOfEtat(etat, target));
+        return;
+      }
+    } else if (ef.effet == 'paralyseGoule' || ef.effet == 'poisonParalysant') {
+      if (predicateAsBool(target, 'immunite_paralyse')) {
+        sendPerso(target, 'ne peut pas être ' + stringOfEtat('paralyse', target));
+        return;
+      }
     }
     if (ef.effet === 'lienDeSang') {
       if (ef.attaquant === undefined) {
