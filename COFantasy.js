@@ -1,4 +1,4 @@
-//Dernière modification : dim. 02 févr. 2025,  09:29
+//Dernière modification : lun. 17 févr. 2025,  02:35
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -6909,7 +6909,7 @@ var COFantasy = COFantasy || function() {
     return bonus;
   }
 
-  function bonusTestToutesCaracs(personnage, options, testId, evt, expliquer) {
+  function bonusTestToutesCaracs(personnage, options, evt, expliquer) {
     if (options && options.cacheBonusToutesCaracs) {
       if (options.cacheBonusToutesCaracs.val !== undefined) {
         return options.cacheBonusToutesCaracs.val;
@@ -7032,8 +7032,6 @@ var COFantasy = COFantasy || function() {
     }
     if (options) {
       if (options.bonus) bonus += options.bonus;
-      if (options.chanceRollId && options.chanceRollId[testId])
-        bonus += options.chanceRollId[testId];
       let malusCasque = false;
       if (options.bonusAttrs) {
         options.bonusAttrs.forEach(function(attr) {
@@ -7113,7 +7111,7 @@ var COFantasy = COFantasy || function() {
 
   //retourne un entier
   // evt n'est défini que si la caractéristique est effectivement utilisée
-  function bonusTestCarac(carac, personnage, options, testId, evt, explications) {
+  function bonusTestCarac(carac, personnage, options, evt, explications) {
     const expliquer = function(msg) {
       if (explications) explications.push(msg);
     };
@@ -7410,7 +7408,7 @@ var COFantasy = COFantasy || function() {
     }
     // Puis la partie commune
     options = options || {};
-    bonus += bonusTestToutesCaracs(personnage, options, testId, evt, expliquer);
+    bonus += bonusTestToutesCaracs(personnage, options, evt, expliquer);
     //Pas besoin de mettre la valeur de caractéristique si c'est le seul bonus
     if (explications && explications.length == 1) explications.pop();
     return bonus;
@@ -7697,7 +7695,7 @@ var COFantasy = COFantasy || function() {
     options = options || {};
     let testRes = {};
     let explications = [];
-    let bonusCarac = bonusTestCarac(carac, personnage, options, testId, evt, explications);
+    let bonusCarac = bonusTestCarac(carac, personnage, options, evt, explications);
     let jetCache = ficheAttributeAsBool(personnage, 'jets_caches', false);
     let testsRatesDuTour;
     let listeTestsRatesDuTour;
@@ -7840,7 +7838,7 @@ var COFantasy = COFantasy || function() {
   // - roll: le inlineroll
   function jetCaracteristique(personnage, carac, options, testId, evt, callback) {
     let explications = [];
-    let bonusCarac = bonusTestCarac(carac, personnage, options, testId, evt, explications);
+    let bonusCarac = bonusTestCarac(carac, personnage, options, evt, explications);
     let nbDe = nbreDeTestCarac(carac, personnage);
     let jetCache = ficheAttributeAsBool(personnage, 'jets_caches', false);
     let de = computeDice(personnage, {
@@ -7872,6 +7870,10 @@ var COFantasy = COFantasy || function() {
       let d20roll = roll.results.total;
       effetAuD20(personnage, d20roll);
       let rtext = jetCache ? d20roll + bonusCarac : buildinline(roll) + bonusText;
+        if (options.chanceRollId && options.chanceRollId[testId]) {
+          bonusCarac += options.chanceRollId[testId];
+          rtext += "+" + options.chanceRollId[testId];
+        }
       let rt = {
         total: d20roll + bonusCarac,
       };
@@ -8775,7 +8777,7 @@ var COFantasy = COFantasy || function() {
           }
           let plageEC = parseInt(args[1]);
           if (isNaN(plageEC) || plageEC < 0 || plageEC > 19) {
-            error("La plage d'échecs critqiques doit être un nombre positif inférieur à 19", opts);
+            error("La plage d'échecs critiques doit être un nombre positif inférieur à 19", opts);
             return;
           }
           options.plageEchecCritique = plageEC;
@@ -11846,7 +11848,7 @@ var COFantasy = COFantasy || function() {
       init += 4;
     }
     if (predicateAsBool(perso, 'autoriteNaturelle')) {
-      let bonus = 1 + modCarac(perso, 'CHA');
+      let bonus = 1 + modCarac(perso, 'charisme');
       if (bonus > 0) {
         init += bonus;
       }
@@ -13074,7 +13076,7 @@ var COFantasy = COFantasy || function() {
       defense -= getIntValeurOfEffet(target, 'toiles', 2);
       explications.push("Entravé => -2 DEF");
     }
-    if (attributeAsBool(target, 'protectionContreLeMal') &&
+    if (predicateOrAttributeAsBool(target, 'protectionContreLeMal') &&
       (attaquant && estMauvais(attaquant))) {
       let bonusProtectionContreLeMal = getIntValeurOfEffet(target, 'protectionContreLeMal', 2);
       defense += bonusProtectionContreLeMal;
@@ -13430,7 +13432,7 @@ var COFantasy = COFantasy || function() {
       explications.push("Rapide comme le vent => +3 DEF");
     }
     if (predicateAsBool(target, 'autoriteNaturelle')) {
-      let bonus = 1 + modCarac(target, 'CHA');
+      let bonus = 1 + modCarac(target, 'charisme');
       if (bonus > 0) {
         defense += bonus;
       }
@@ -21991,7 +21993,7 @@ var COFantasy = COFantasy || function() {
     }
     let bonus = options.bonus || 0;
     if (options.attaquant &&
-      attributeAsBool(target, 'protectionContreLeMal') &&
+      predicateOrAttributeAsBool(target, 'protectionContreLeMal') &&
       estMauvais(options.attaquant)) {
       let bonusProtectionContreLeMal = getIntValeurOfEffet(target, 'protectionContreLeMal', 2);
       bonus += bonusProtectionContreLeMal;
@@ -41241,7 +41243,7 @@ var COFantasy = COFantasy || function() {
     if (attributeAsBool(agrippant, 'rage')) difficulte += 2;
     let bonus = 0;
     let explications = [];
-    if (attributeAsBool(perso, 'protectionContreLeMal') &&
+    if (predicateOrAttributeAsBool(perso, 'protectionContreLeMal') &&
       estMauvais(agrippant)) {
       let bonusProtectionContreLeMal = getIntValeurOfEffet(perso, 'protectionContreLeMal', 2);
       bonus += bonusProtectionContreLeMal;
