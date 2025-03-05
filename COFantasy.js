@@ -1,4 +1,4 @@
-//Dernière modification : lun. 17 févr. 2025,  02:35
+//Dernière modification : mer. 05 mars 2025,  02:19
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -7870,10 +7870,10 @@ var COFantasy = COFantasy || function() {
       let d20roll = roll.results.total;
       effetAuD20(personnage, d20roll);
       let rtext = jetCache ? d20roll + bonusCarac : buildinline(roll) + bonusText;
-        if (options.chanceRollId && options.chanceRollId[testId]) {
-          bonusCarac += options.chanceRollId[testId];
-          rtext += "+" + options.chanceRollId[testId];
-        }
+      if (options.chanceRollId && options.chanceRollId[testId]) {
+        bonusCarac += options.chanceRollId[testId];
+        rtext += "+" + options.chanceRollId[testId];
+      }
       let rt = {
         total: d20roll + bonusCarac,
       };
@@ -16681,6 +16681,10 @@ var COFantasy = COFantasy || function() {
         }
       }
     }
+    if (options.attaquant && predicateAsBool(options.attaquant, 'crocDuDragon') && (predicateAsBool(target, 'dragonInvincible') || predicateAsBool(target, 'emissaireDuDragonInvincible'))) {
+      dmgCoef *= 2;
+      expliquer("Croc du dragon contre le dragon => x2 DMG");
+    }
     otherDmg = otherDmg || [];
     let dmgDisplay = dmg.display;
     let dmgTotal = dmg.total;
@@ -19065,8 +19069,8 @@ var COFantasy = COFantasy || function() {
       return;
     }
     if (ef.effet.endsWith('Temp')) {
-      let etat = ef.effet.substring(0, ef.effet.length-4);
-      if (predicateAsBool(target, 'immunite_'+etat)) {
+      let etat = ef.effet.substring(0, ef.effet.length - 4);
+      if (predicateAsBool(target, 'immunite_' + etat)) {
         sendPerso(target, 'ne peut pas être ' + stringOfEtat(etat, target));
         return;
       }
@@ -23269,7 +23273,7 @@ var COFantasy = COFantasy || function() {
         let rdTarget = getRDS(target);
         let rd = rdTarget.rdt || 0;
         if (!target.perteDeSubstance && options.attaquant && predicateAsBool(target, 'ancreInvincible')) {
-          if (predicateAsBool(options.attaquant, 'dragonInvincble')) {
+          if (predicateAsBool(options.attaquant, 'dragonInvincible')) {
             rd += 10;
             target.messages.push("Ancre contre le dragon => +10 RD");
           } else if (predicateAsBool(options.attaquant, 'emissaireDuDragonInvincible')) {
@@ -53607,7 +53611,7 @@ var COFantasy = COFantasy || function() {
 }();
 
 on('ready', function() {
-  const scriptVersion = '3.15';
+  const scriptVersion = '3.16';
   on('add:token', COFantasy.addToken);
   on("change:campaign:playerpageid", COFantasy.changePlayerPage);
   state.COFantasy = state.COFantasy || {
