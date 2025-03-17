@@ -1,4 +1,4 @@
-//Dernière modification : mer. 05 mars 2025,  02:19
+//Dernière modification : lun. 17 mars 2025,  02:59
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -28331,6 +28331,14 @@ var COFantasy = COFantasy || function() {
     return ligneArme;
   }
 
+  function combatDeMasse(perso) {
+    if (!predicateAsBool(perso, 'combatDeMasse')) return false;
+    let turnOrder = Campaign().get('turnorder');
+    if (turnOrder === '') return false; // rien dans le turn order
+    turnOrder = JSON.parse(turnOrder);
+    return (turnOrder.length > 10);
+  }
+
   //Si listActions est fourni, ça peut faire référence à une ability
   //dont le nom commence et termine par #, contenant une liste d'actions
   //à afficher
@@ -28389,6 +28397,9 @@ var COFantasy = COFantasy || function() {
         ligne += "Effet de hâte : une action d'attaque ou de mouvement en plus <br />";
       } else if (attributeAsBool(perso, 'rapideCommeLeVent')) {
         ligne += "Rapide comme le vent : une action d'attaque ou de mouvement en plus <br />";
+      }
+      if (combatDeMasse(perso)) {
+        ligne += "Combat de masse : une action d'attaque ou de mouvement en plus <br />";
       }
       if (attributeAsBool(perso, 'reactionViolente')) {
         ligne += "Crise de folie : doit attaquer la personne qui l'a provoqué et ceux qui l'en empêchent.<br />";
