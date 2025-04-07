@@ -1,4 +1,4 @@
-//Dernière modification : lun. 17 mars 2025,  02:59
+//Dernière modification : lun. 07 avr. 2025,  02:26
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -1720,12 +1720,14 @@ var COFantasy = COFantasy || function() {
       }
       stateCOF.roundMarkerId = roundMarker.id;
       if (roundMarkerSpec.layer === 'map') toFront(roundMarker);
-      // Ne pas amener une monture montée en avant pour éviter de cacher le cavalier
-      if (cavalier && monture) {
-        toFront(monture.token);
-        toFront(cavalier.token);
-      } else {
-        toFront(token);
+      if (!predicateAsBool(personnage, 'tokenEnDessous')) {
+        // Ne pas amener une monture montée en avant pour éviter de cacher le cavalier
+        if (cavalier && monture) {
+          toFront(monture.token);
+          toFront(cavalier.token);
+        } else {
+          toFront(token);
+        }
       }
       setTimeout(_.bind(activateRoundMarker, undefined, sync), 200);
     } else if (roundMarker) { //rotation
@@ -28904,6 +28906,13 @@ var COFantasy = COFantasy || function() {
     }
     getSelected(msg, function(selected, playerId) {
       iterSelected(selected, function(perso) {
+        if (liste) {
+          const evt = {
+            type: "liste d'actions"
+          };
+          addEvent(evt);
+          if (limiteRessources(perso, options, liste, liste, evt)) return;
+        }
         let actions = turnAction(perso, playerId, liste);
         if (!actions) {
           let l = liste || '';
