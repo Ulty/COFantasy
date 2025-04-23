@@ -1,4 +1,4 @@
-//Dernière modification : lun. 07 avr. 2025,  02:26
+//Dernière modification : mer. 23 avr. 2025,  10:05
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -15664,7 +15664,7 @@ var COFantasy = COFantasy || function() {
         }
       }
       if (options.pointsVitaux && estNonVivant(target)) {
-        sendPlayer(playerName, "La cible n'est pas vraiment vivante : " + attaquant.name + " ne trouve pas de points vitaux", playerId);
+        sendPlayer(playerName, "La cible n'est pas vraiment vivante : " + nomPerso(attaquant) + " ne trouve pas de points vitaux", playerId);
         return false;
       }
       if (attributeAsBool(attaquant, 'tenuADistanceManoeuvre(' + target.token.id + ')')) {
@@ -25918,8 +25918,8 @@ var COFantasy = COFantasy || function() {
       type: "nouveauJour",
       attributes: [],
       action: {
-        persos: persos,
-        options: options
+        persos,
+        options
       }
     };
     addEvent(evt);
@@ -28107,8 +28107,7 @@ var COFantasy = COFantasy || function() {
   // - ligneOptions : une chaîne de caractères à ajouter aux attaques
   // - target : l'id de la cible des attaques
   // - nePasAfficherArmes : quand on affiche plus tard l'arme en main
-  function listeAttaquesVisibles(perso, options) {
-    options = options || {};
+  function listeAttaquesVisibles(perso, options = {}) {
     let ligneOptions = options.ligneOptions || '';
     let target = options.target || '@{target|token_id}';
     let ligne = '';
@@ -30648,8 +30647,6 @@ var COFantasy = COFantasy || function() {
     }
     let effet = cmd[1];
     let lanceur = options.lanceur;
-    let charId;
-    if (lanceur) charId = lanceur.charId;
     if (cof_states[effet]) { //remplacer par sa version effet temporaire
       effet += 'Temp';
     }
@@ -30661,7 +30658,7 @@ var COFantasy = COFantasy || function() {
       }
       let armeActuelle = armesEnMain(lanceur);
       if (!armeActuelle) {
-        whisperChar(charId, "Pas d'arme en main, impossible de savoir à quoi appliquer " + effet);
+        whisperChar(lanceur.charId, "Pas d'arme en main, impossible de savoir à quoi appliquer " + effet);
         return;
       }
       effet = effet + '(' + armeActuelle.label + ')';
@@ -30709,7 +30706,6 @@ var COFantasy = COFantasy || function() {
           lanceur = persoOfId(selected[0]._id);
           if (lanceur) {
             options.lanceur = lanceur;
-            charId = lanceur.charId;
           }
         }
       }
@@ -36915,8 +36911,12 @@ var COFantasy = COFantasy || function() {
         if (cavalierBis === undefined) emp.remove();
       });
       if (cavalierBis) {
+        if (attributeAsBool(cavalierBis, 'monteSur') && distanceCombat(cavalierBis.token, tokenM, pageId) === 0) {
         sendPerso(cavalier, "ne peut monter sur " + nomMonture + " car " + onGenre(monture, 'il', 'elle') + " a déjà un cavalier, " + nomPerso(cavalierBis));
         return;
+        }
+        removeTokenAttr(cavalierBis, 'monteSur');
+        removeTokenAttr(monture, 'estMontePar');
       }
     }
     if (distanceCombat(tokenC, tokenM, pageId) > 0) {
