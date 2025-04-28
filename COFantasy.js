@@ -1,4 +1,4 @@
-//Dernière modification : mer. 23 avr. 2025,  10:05
+//Dernière modification : lun. 28 avr. 2025,  10:59
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -5298,6 +5298,11 @@ var COFantasy = COFantasy || function() {
         //Maintenant on remet les attributs
         if (character.attributes) {
           character.attributes.forEach(function(attr) {
+            let name = attr.get('name');
+            if (!name) {
+              error("Attribut sans nom dans un personnage effacé", attr);
+              return;
+            }
             let oldId = attr.id;
             let newAttr = createObj('attribute', {
               characterid: charId,
@@ -5344,6 +5349,10 @@ var COFantasy = COFantasy || function() {
         let oldId = attr.id;
         let nameDel = attr.get('name');
         log("Restoring attribute " + nameDel);
+        if (!nameDel) {
+          error("L'attribut effacé n'avait pas de nom", attr);
+          return;
+        }
         let newAttr =
           createObj('attribute', {
             characterid: attr.newCharId || attr.get('characterid'),
