@@ -1,4 +1,4 @@
-//Dernière modification : lun. 28 avr. 2025,  10:59
+//Dernière modification : sam. 12 juil. 2025,  01:51
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -8267,9 +8267,9 @@ var COFantasy = COFantasy || function() {
           return translatePathCoordinates(v[1], v[2], p);
         });
         return chemin;
-      } catch (error) {
+      } catch (err) {
         error("Erreur, chemin mal formé dans le calque d'éclairage dynamique", path);
-        log(error.name + ": " + error.message);
+        log(err.name + ": " + err.message);
       }
     });
     //On rajoute les portes fermées.
@@ -9308,7 +9308,8 @@ var COFantasy = COFantasy || function() {
       bonus: 0,
       id: generateUUID()
     };
-    let exprDM = expr.trim().toLowerCase();
+    if (expr && typeof expr == 'object' && expr.length) expr = expr[0];
+    let exprDM = (expr+'').trim().toLowerCase();
     let indexD = exprDM.indexOf('d');
     if (indexD > 0) {
       dm.nbDe = parseInt(exprDM.substring(0, indexD));
@@ -22619,7 +22620,7 @@ var COFantasy = COFantasy || function() {
     }; //si il faut noter les DMs d'un type particulier
     if (mainDmgType == 'drain') dmSuivis.drain = dmgTotal;
     predicatesNamed(target, 'vitaliteSurnaturelle').forEach(function(a) {
-      if (typeof a != "string") return;
+      if (typeof a != 'string') return;
       let indexType = a.indexOf('/');
       if (indexType < 0 || indexType == a.length) return;
       a = a.substring(indexType + 1);
