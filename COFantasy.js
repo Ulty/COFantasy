@@ -1,4 +1,4 @@
-//Dernière modification : sam. 12 juil. 2025,  01:51
+//Dernière modification : dim. 25 janv. 2026,  06:21
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -9309,7 +9309,7 @@ var COFantasy = COFantasy || function() {
       id: generateUUID()
     };
     if (expr && typeof expr == 'object' && expr.length) expr = expr[0];
-    let exprDM = (expr+'').trim().toLowerCase();
+    let exprDM = (expr + '').trim().toLowerCase();
     let indexD = exprDM.indexOf('d');
     if (indexD > 0) {
       dm.nbDe = parseInt(exprDM.substring(0, indexD));
@@ -17863,6 +17863,7 @@ var COFantasy = COFantasy || function() {
           name: 'charge_' + attackLabel
         });
         if (chargesArme.length > 0) {
+          chargesArme = chargesArme[0];
           currentCharge = parseInt(chargesArme[0].get('current'));
         }
         if (isNaN(currentCharge) || currentCharge < 1) {
@@ -17886,17 +17887,30 @@ var COFantasy = COFantasy || function() {
             chargesGrenaille[0].set('current', currentChargeGrenaille);
           }
         }
-        evt.attributes.push({
-          attribute: chargesArme[0],
-          current: currentCharge
-        });
+        if (chargesArme) {
+          evt.attributes.push({
+            attribute: chargesArme,
+            current: currentCharge
+          });
+        }
         currentCharge -= 1;
         //Si l'arme n'est plus chargée, on peut perdre le bonus d'initiative
         if (currentCharge === 0 &&
           bonusPlusViteQueSonOmbre(attaquant, weaponStats)) {
           updateNextInit(attaquant);
         }
-        chargesArme[0].set('current', currentCharge);
+        if (chargesArme) {
+          chargesArme.set('current', currentCharge);
+        } else {
+          chargesArme = createObj('attribute', {
+            characterid: attackingCharId,
+            name: 'charge_' + attackLabel,
+            value: currentCharge
+          });
+          evt.attributes.push({
+            attribute: chargesArme
+          });
+        }
       }
     }
     // Effets quand on rentre en combat
@@ -36922,8 +36936,8 @@ var COFantasy = COFantasy || function() {
       });
       if (cavalierBis) {
         if (attributeAsBool(cavalierBis, 'monteSur') && distanceCombat(cavalierBis.token, tokenM, pageId) === 0) {
-        sendPerso(cavalier, "ne peut monter sur " + nomMonture + " car " + onGenre(monture, 'il', 'elle') + " a déjà un cavalier, " + nomPerso(cavalierBis));
-        return;
+          sendPerso(cavalier, "ne peut monter sur " + nomMonture + " car " + onGenre(monture, 'il', 'elle') + " a déjà un cavalier, " + nomPerso(cavalierBis));
+          return;
         }
         removeTokenAttr(cavalierBis, 'monteSur');
         removeTokenAttr(monture, 'estMontePar');
