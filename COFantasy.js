@@ -1,4 +1,4 @@
-//Dernière modification : dim. 25 janv. 2026,  06:21
+//Dernière modification : jeu. 29 janv. 2026,  10:52
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -18941,6 +18941,7 @@ var COFantasy = COFantasy || function() {
 
   function addEffetTemporaireLie(perso, attr, evt) {
     let etlAttr = tokenAttribute(perso, 'effetsTemporairesLies');
+    evt.attributes = evt.attributes || [];
     if (etlAttr.length === 0) {
       etlAttr = createObj('attribute', {
         characterid: perso.charId,
