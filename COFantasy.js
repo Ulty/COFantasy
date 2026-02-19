@@ -1,4 +1,4 @@
-//Dernière modification : jeu. 29 janv. 2026,  10:52
+//Dernière modification : jeu. 19 févr. 2026,  09:37
 // ------------------ generateRowID code from the Aaron ---------------------
 const generateUUID = (function() {
     "use strict";
@@ -10997,6 +10997,14 @@ var COFantasy = COFantasy || function() {
         });
       });
     }
+    if (weaponStats.armeNaturelle && predicateAsBool(perso, 'optionsAttaquesNaturelles')) {
+      let wo = ' ' + predicateAsBool(perso, 'optionsAttaquesNaturelles');
+        wo.split(' --').reverse().forEach(function(o) {
+          o = o.trim();
+          if (o === '') return;
+          optArgs.unshift(o);
+        });
+    }
     options.sortilege = weaponStats.sortilege;
     options.hache = weaponStats.hache;
     options.armeNaturelle = weaponStats.armeNaturelle;
@@ -16956,9 +16964,8 @@ var COFantasy = COFantasy || function() {
             case 'Arme de jet':
               break;
             default:
-              if (oatk === undefined) oatk = fieldAsInt(att, 'armeatk', 0);
-              if (atkcac === undefined) atkcac = oatk;
-              if (oatk > atkcac) atkcac = oatk;
+              oatk = fieldAsInt(att, 'armeatk', 0);
+              if (atkcac === undefined || oatk > atkcac) atkcac = oatk;
           }
         }
         if (atkcac === undefined) {
@@ -16980,9 +16987,8 @@ var COFantasy = COFantasy || function() {
           if (portee === 0) continue;
           let typeat = fieldAsString(att, 'armetypeattaque', 'Naturel');
           if (typeat == 'Sortilege') continue;
-          if (oatk === undefined) oatk = fieldAsInt(att, 'armeatk', 0);
-          if (atktir === undefined) atktir = oatk;
-          if (oatk > atktir) atktir = oatk;
+          oatk = fieldAsInt(att, 'armeatk', 0);
+          if (atktir === undefined  || oatk > atktir) atktir = oatk;
         }
         if (atktir === undefined) {
           if (atk === undefined)
@@ -17001,9 +17007,8 @@ var COFantasy = COFantasy || function() {
           }
           let typeat = fieldAsString(att, 'armetypeattaque', 'Naturel');
           if (typeat != 'Sortilege') continue;
-          if (oatk === undefined) oatk = fieldAsInt(att, 'armeatk', 0);
-          if (atkmag === undefined) atkmag = oatk;
-          if (oatk > atkmag) atkmag = oatk;
+          oatk = fieldAsInt(att, 'armeatk', 0);
+          if (atkmag === undefined || oatk > atkmag) atkmag = oatk;
         }
         if (atkmag === undefined) {
           if (atk === undefined)
@@ -25037,11 +25042,14 @@ var COFantasy = COFantasy || function() {
     if (msg.selected && msg.selected.length > 0) {
       let firstSelected = getObj('graphic', msg.selected[0]._id);
       if (firstSelected === undefined) {
+        firstSelected = getObj(msg.selected[0]._type, msg.selected[0]._id);
+        if (!firstSelected) {
         error("Un token sélectionné n'est pas trouvé en interne", msg.selected);
-        return;
+        }
       }
-      pageId = firstSelected.get('pageid');
-    } else {
+      if (firstSelected) pageId = firstSelected.get('pageid');
+    }
+    if (!pageId) {
       playerId = getPlayerIdFromMsg(msg);
       pageId = getPageId(playerId);
     }
